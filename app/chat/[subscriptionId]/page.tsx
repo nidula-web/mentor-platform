@@ -14,9 +14,9 @@ export default function ChatPage() {
     const [newMessage, setNewMessage] = useState('')
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
     const [otherUserName, setOtherUserName] = useState('Loading...')
-    const [otherUserProfilePic, setOtherUserProfilePic] = useState<string | null>(null)
+    const [otherUserPicture, setOtherUserPicture] = useState(null)
     const [isOnline, setIsOnline] = useState(false)
-    const [lastSeen, setLastSeen] = useState<string | null>(null)
+    const [lastSeen, setLastSeen] = useState(null)
     const [loading, setLoading] = useState(true)
     const [isRecording, setIsRecording] = useState(false)
     const [blocked, setBlocked] = useState(false)
@@ -60,21 +60,19 @@ export default function ChatPage() {
         return false
     }
 
-    function formatRelativeTime(dateString: string) {
-        if (!dateString) return ''
-        const date = new Date(dateString)
-        const now = new Date()
-        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-        if (diffInSeconds < 60) return 'Just now'
-        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-        
-        const yesterday = new Date(now)
-        yesterday.setDate(yesterday.getDate() - 1)
-        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
-        
-        return date.toLocaleDateString()
+    function formatLastSeen(dateString) {
+      if (!dateString) return ''
+      const now = new Date()
+      const date = new Date(dateString)
+      const diff = now.getTime() - date.getTime()
+      const mins = Math.floor(diff / 60000)
+      const hours = Math.floor(diff / 3600000)
+      const days = Math.floor(diff / 86400000)
+      if (mins < 1) return 'Just now'
+      if (mins < 60) return mins + 'm ago'
+      if (hours < 24) return hours + 'h ago'
+      if (days < 2) return 'Yesterday'
+      return date.toLocaleDateString()
     }
 
     async function loadChat() {
@@ -125,7 +123,7 @@ export default function ChatPage() {
 
                     if (profile) {
                         setOtherUserName(profile.full_name)
-                        setOtherUserProfilePic(profile.profile_picture)
+                        setOtherUserPicture(profile.profile_picture)
                         setIsOnline(profile.is_online)
                         setLastSeen(profile.last_seen)
                     }
@@ -301,9 +299,9 @@ export default function ChatPage() {
                 </button>
                 
                 <div className="relative">
-                    {otherUserProfilePic ? (
+                    {otherUserPicture ? (
                         <img 
-                            src={otherUserProfilePic} 
+                            src={otherUserPicture} 
                             alt={otherUserName} 
                             className="w-11 h-11 rounded-full object-cover ring-2 ring-white shadow-sm" 
                         />
@@ -323,14 +321,13 @@ export default function ChatPage() {
                     </h1>
                     <div className="flex items-center gap-1.5">
                         {isOnline ? (
-                            <span className="text-[11px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-1">
+                            <span className="text-[11px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-1 text-xs">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                                 Online
                             </span>
                         ) : (
-                            <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                                {lastSeen ? `Last seen ${formatRelativeTime(lastSeen)}` : 'Offline'}
+                            <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 text-xs">
+                                {lastSeen ? `Last seen ${formatLastSeen(lastSeen)}` : 'Offline'}
                             </span>
                         )}
                     </div>
