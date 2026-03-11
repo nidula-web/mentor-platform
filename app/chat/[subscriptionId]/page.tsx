@@ -75,10 +75,11 @@ export default function ChatPage() {
       .single()
 
     if (sub) {
-      // Find the other person's name
-      const otherId = sub.student_id === user.id 
-        ? sub.mentor_id 
-        : sub.student_id
+  const s: any = sub
+  // Find the other person's name
+  const otherId = s.student_id === user.id 
+    ? s.mentor_id 
+    : s.student_id
       
       const { data: profile } = await supabase
         .from('profiles')
