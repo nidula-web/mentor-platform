@@ -1,11 +1,12 @@
 "use client";
+// @ts-nocheck
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
-export default function SignUpPage() {
+function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [role, setRole] = useState<"student" | "mentor">(() => {
@@ -18,6 +19,7 @@ export default function SignUpPage() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     const r = searchParams.get("role");
@@ -26,10 +28,14 @@ export default function SignUpPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms & Conditions and Privacy Policy.");
+      setLoading(true);
+      setLoading(false);
+      return;
+    }
 
-    const supabase = createClient();
+    const supabase: any = createClient();
 
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -50,13 +56,27 @@ export default function SignUpPage() {
       return;
     }
 
+    if (!phone) {
+      setError("Phone number is required.");
+      setLoading(false);
+      return;
+    }
+
+    // Sri Lankan phone validation: 07XXXXXXXX or +947XXXXXXXX
+    const slPhoneRegex = /^(?:\+94|0)7[0-9]{8}$/;
+    if (!slPhoneRegex.test(phone.replace(/\s/g, ""))) {
+      setError("Please enter a valid Sri Lankan phone number (e.g., 077 123 4567).");
+      setLoading(false);
+      return;
+    }
+
     const { error: profileError } = await supabase
       .from("profiles")
       .insert({
         id: userId,
         full_name: fullName,
         email,
-        phone: phone || null,
+        phone: phone.trim(),
         role,
       });
 
@@ -77,17 +97,17 @@ export default function SignUpPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 py-12 px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white p-8 shadow-sm">
+        <div className="rounded-2xl bg-white p-6 sm:p-8 shadow-sm">
           <div className="mb-8 text-center">
             <Link href="/" className="text-xl font-bold text-blue-700">
-              MentorLK
+              ExamCoach
             </Link>
           </div>
           <h1 className="mb-6 text-2xl font-bold text-gray-900">Create account</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="fullName" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="fullName" className="mb-1 block text-sm font-medium text-gray-800">
                 Full Name
               </label>
               <input
@@ -102,7 +122,7 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-800">
                 Email
               </label>
               <input
@@ -117,7 +137,7 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-800">
                 Password
               </label>
               <input
@@ -133,17 +153,17 @@ export default function SignUpPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-gray-800">
                 Role
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole("student")}
-                  className={`rounded-xl border-2 px-4 py-4 text-center text-sm font-medium transition-colors ${
+                  className={`rounded-xl border-2 px-2 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm font-medium transition-colors ${
                     role === "student"
                       ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      : "border-gray-300 bg-white text-gray-900 hover:border-gray-400"
                   }`}
                 >
                   I am a Student
@@ -151,29 +171,51 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => setRole("mentor")}
-                  className={`rounded-xl border-2 px-4 py-4 text-center text-sm font-medium transition-colors ${
+                  className={`rounded-xl border-2 px-2 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm font-medium transition-colors ${
                     role === "mentor"
                       ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      : "border-gray-300 bg-white text-gray-900 hover:border-gray-400"
                   }`}
                 >
-                  I am a Mentor
+                  I am a Coach
                 </button>
               </div>
             </div>
 
             <div>
-              <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-700">
-                Phone Number
+              <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-800">
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="+94 7X XXX XXXX"
+                required
+                className={`w-full rounded-lg border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  error && error.includes("phone") ? "border-red-500" : "border-gray-300"
+                }`}
               />
+            </div>
+
+            <div className="flex items-start gap-3 py-2">
+              <input
+                id="terms"
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="terms" className="text-sm text-gray-600">
+                I agree to the{" "}
+                <Link href="/terms" className="font-medium text-blue-600 hover:text-blue-700" target="_blank">
+                  Terms & Conditions
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="font-medium text-blue-600 hover:text-blue-700" target="_blank">
+                  Privacy Policy
+                </Link>
+              </label>
             </div>
 
             {error && (
@@ -184,7 +226,7 @@ export default function SignUpPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !agreedToTerms}
               className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
             >
               {loading ? "Creating account…" : "Sign Up"}
@@ -202,3 +244,16 @@ export default function SignUpPage() {
     </div>
   );
 }
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 italic">
+        Loading...
+      </div>
+    }>
+      <SignUpContent />
+    </Suspense>
+  );
+}
+

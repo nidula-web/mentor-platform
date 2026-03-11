@@ -60,3 +60,4 @@ export const OL_SUBJECTS = [
 export const GRADES = ["A", "B", "C", "S", "F"] as const;
 
 export const LANGUAGES = ["Sinhala", "Tamil", "English"] as const;
+

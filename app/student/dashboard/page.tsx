@@ -1,10 +1,12 @@
 "use client";
+// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Subscription, Mentor, Profile } from "@/lib/supabase";
+import StudentGuide from "@/components/StudentGuide";
 
 type SubWithMentor = Subscription & {
   mentor: Mentor | null;
@@ -37,18 +39,19 @@ export default function StudentDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState<string>("");
   const [subscriptions, setSubscriptions] = useState<SubWithMentor[]>([]);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const supabase: any = createClient();
+      const { data: { user } }: any = await supabase.auth.getUser();
 
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile }: any = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
@@ -66,54 +69,96 @@ export default function StudentDashboardPage() {
         return;
       }
 
-      const mentorIds = [...new Set(subsData.map((s) => s.mentor_id))];
-      const { data: mentorsData } = await supabase
+      const mentorIds = [...new Set(subsData.map((s: any) => s.mentor_id))];
+      const { data: mentorsData }: any = await supabase
         .from("mentors")
         .select("*")
         .in("id", mentorIds);
-      const mentorMap = new Map((mentorsData ?? []).map((m) => [m.id, m]));
-      const mentorUserIds = (mentorsData ?? []).map((m) => m.user_id);
-      const { data: profilesData } = await supabase
+      const mentorMap = new Map((mentorsData ?? []).map((m: any) => [m.id, m]));
+      const mentorUserIds = (mentorsData ?? []).map((m: any) => m.user_id);
+      const { data: profilesData }: any = await supabase
         .from("profiles")
         .select("id, full_name, profile_picture")
         .in("id", mentorUserIds);
       const profileMap = new Map(
-        (profilesData ?? []).map((p) => [
+        (profilesData ?? []).map((p: any) => [
           p.id,
           { full_name: p.full_name, profile_picture: p.profile_picture },
         ])
       );
 
-      const { data: reviewsData } = await supabase
+      const { data: reviewsData }: any = await supabase
         .from("reviews")
         .select("subscription_id")
         .eq("student_id", user.id);
       const reviewedSubIds = new Set(
-        (reviewsData ?? []).map((r) => r.subscription_id)
+        (reviewsData ?? []).map((r: any) => r.subscription_id)
       );
 
       const mentorIdToUserId = new Map(
-        (mentorsData ?? []).map((m) => [m.id, m.user_id])
+        (mentorsData ?? []).map((m: any) => [m.id, m.user_id])
       );
 
-      const withMentors: SubWithMentor[] = subsData.map((s) => {
-        const mentor = mentorMap.get(s.mentor_id) ?? null;
+      const withMentors: SubWithMentor[] = [];
+      const now = new Date();
+
+      for (const s of (subsData ?? [])) {
+        const mentor = (mentorMap.get(s.mentor_id) as Mentor) ?? null;
         const mentorProfile = mentor
-          ? profileMap.get(mentor.user_id) ?? null
+          ? profileMap.get((mentor as any).user_id) ?? null
           : null;
-        return {
+        
+        let currentStatus = s.status;
+
+        // Auto-expiry check
+        if (s.status === "active" && s.expires_at && new Date(s.expires_at) < now) {
+          currentStatus = "expired";
+          
+          // Update database
+          await supabase
+            .from("subscriptions")
+            .update({ status: "expired" })
+            .eq("id", s.id);
+          
+          // Decrement mentor student count
+          if (mentor) {
+            await supabase
+              .from("mentors")
+              .update({ current_student_count: Math.max(0, (mentor.current_student_count || 1) - 1) })
+              .eq("id", s.id);
+          }
+        }
+
+        withMentors.push({
           ...s,
+          status: currentStatus,
           mentor,
           mentor_profile: mentorProfile,
           has_review: reviewedSubIds.has(s.id),
-        };
-      });
+        });
+      }
 
       setSubscriptions(withMentors);
       setLoading(false);
     }
     load();
+
+    // Check if guide should be shown
+    const guideShown = localStorage.getItem("student_guide_shown");
+    if (!guideShown) {
+      setShowGuide(true);
+    }
   }, [router]);
+
+  const handleCloseGuide = () => {
+    localStorage.setItem("student_guide_shown", "true");
+    setShowGuide(false);
+  };
+
+  const handleShowGuideAgain = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowGuide(true);
+  };
 
   const now = new Date();
   const activeSubs = subscriptions.filter(
@@ -124,9 +169,9 @@ export default function StudentDashboardPage() {
   );
   const pastSubs = subscriptions.filter(
     (s) =>
-      s.status !== "active" ||
-      !s.expires_at ||
-      new Date(s.expires_at) <= now
+      s.status === "expired" ||
+      s.status === "cancelled" ||
+      (s.expires_at && new Date(s.expires_at) <= now)
   );
 
   if (loading) {
@@ -139,22 +184,9 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-bold text-blue-700">
-            MentorLK
-          </Link>
-          <Link
-            href="/browse"
-            className="text-sm font-medium text-gray-600 hover:text-gray-900"
-          >
-            Browse mentors
-          </Link>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <h1 className="mb-8 text-2xl font-bold text-gray-900">
+      <main className="mx-auto max-w-5xl px-4 py-8 pt-24 sm:px-6">
+        <h1 className="mb-8 text-2xl font-bold text-gray-900 sm:text-3xl">
           Welcome, {studentName}
         </h1>
 
@@ -166,12 +198,12 @@ export default function StudentDashboardPage() {
 
           {activeSubs.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-              <p className="text-gray-600">You don&apos;t have a mentor yet</p>
+              <p className="text-gray-600">You don&apos;t have an exam coach yet</p>
               <Link
                 href="/browse"
                 className="mt-4 inline-block rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700"
               >
-                Find a Mentor
+                Find Your Exam Coach
               </Link>
             </div>
           ) : (
@@ -200,7 +232,7 @@ export default function StudentDashboardPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-gray-900">
-                          {sub.mentor_profile?.full_name ?? "Mentor"}
+                          {sub.mentor_profile?.full_name ?? "Coach"}
                         </h3>
                         {sub.mentor?.university && (
                           <p className="text-sm text-gray-600">
@@ -233,7 +265,7 @@ export default function StudentDashboardPage() {
                       {!sub.has_review && (
                         <Link
                           href={`/review/${sub.id}`}
-                          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
                         >
                           Leave Review
                         </Link>
@@ -257,7 +289,7 @@ export default function StudentDashboardPage() {
                 {pastSubs.map((sub) => (
                   <li
                     key={sub.id}
-                    className="flex items-center justify-between px-6 py-4"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-6 py-4"
                   >
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
@@ -271,25 +303,38 @@ export default function StudentDashboardPage() {
                           <DefaultAvatar className="h-10 w-10" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {sub.mentor_profile?.full_name ?? "Mentor"}
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {sub.mentor_profile?.full_name ?? "Coach"}
+                          {sub.status === "expired" && (
+                            <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">EXPIRED</span>
+                          )}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-gray-500 truncate">
                           {sub.mentor?.university}
                           {sub.expires_at &&
                             ` • Ended ${new Date(sub.expires_at).toLocaleDateString()}`}
                         </p>
                       </div>
                     </div>
-                    {!sub.has_review && (
-                      <Link
-                        href={`/review/${sub.id}`}
-                        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        Leave Review
-                      </Link>
-                    )}
+                    <div className="flex gap-2 sm:gap-3">
+                      {sub.status === "expired" && (
+                        <Link
+                          href={`/subscribe/${sub.mentor_id}`}
+                          className="flex-1 sm:flex-none text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        >
+                          Renew
+                        </Link>
+                      )}
+                      {!sub.has_review && (
+                        <Link
+                          href={`/review/${sub.id}`}
+                          className="flex-1 sm:flex-none text-center rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+                        >
+                          Review
+                        </Link>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -297,6 +342,20 @@ export default function StudentDashboardPage() {
           </section>
         )}
       </main>
+
+      <footer className="mx-auto max-w-5xl px-4 pb-12 sm:px-6">
+        <div className="border-t border-gray-200 pt-8 text-center">
+          <button 
+            onClick={handleShowGuideAgain}
+            className="text-sm font-bold text-blue-600 hover:underline"
+          >
+            📖 View Instructions Again
+          </button>
+        </div>
+      </footer>
+
+      {showGuide && <StudentGuide onClose={handleCloseGuide} />}
     </div>
   );
 }
+

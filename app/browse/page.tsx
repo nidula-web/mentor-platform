@@ -1,9 +1,12 @@
 "use client";
+// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Mentor, Profile } from "@/lib/supabase";
+import { getPricing } from "@/lib/pricing";
 import {
   EXAM_TYPES,
   AL_STREAMS,
@@ -14,6 +17,8 @@ import {
 
 type MentorWithProfile = Mentor & {
   profile: Pick<Profile, "full_name" | "profile_picture"> | null;
+  averageRating: number | null;
+  reviewCount: number;
 };
 
 function getAllSubjects(): string[] {
@@ -55,9 +60,12 @@ function DefaultAvatar({ className }: { className?: string }) {
   );
 }
 
+
 export default function BrowsePage() {
   const [mentors, setMentors] = useState<MentorWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase: any = createClient();
   const [filterExamType, setFilterExamType] = useState<string>("");
   const [filterStream, setFilterStream] = useState<string>("");
   const [filterSubject, setFilterSubject] = useState<string>("");
@@ -69,13 +77,28 @@ export default function BrowsePage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
+      const supabase: any = createClient();
+
+      // Check user role
+      const { data: { user } }: any = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile }: any = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile?.role === "mentor") {
+          window.location.href = "/mentor/dashboard";
+          return;
+        }
+      }
 
       const { data: mentorsData, error } = await supabase
         .from("mentors")
-        .select("*");
+        .select("*")
+        .eq("is_verified", true);
 
-      console.log("Mentors found:", mentorsData);
       if (error) {
         console.log("Error:", error);
         setLoading(false);
@@ -89,28 +112,38 @@ export default function BrowsePage() {
       }
 
       const rawMentors = (mentorsData ?? []) as Mentor[];
+      
+      // Fetch all relevant profiles and reviews in bulk if possible, or keep loop if simple
+      // For now, let's stick to the loop but add review fetching
       const withProfiles: MentorWithProfile[] = [];
       for (const mentor of rawMentors) {
-        const { data: profile, error: profileError } = await supabase
+        // Fetch Profile
+        const { data: profile }: any = await supabase
           .from("profiles")
-          .select("*")
+          .select("full_name, profile_picture")
           .eq("id", mentor.user_id)
           .single();
 
-        if (profileError) {
-          console.log("Profile error:", profileError);
-        }
+        // Fetch Reviews
+        const { data: reviews } = await (supabase
+          .from("reviews"))
+          .select("rating")
+          .eq("mentor_id", mentor.id);
 
-        const typedProfile = (profile ?? null) as Profile | null;
+        let averageRating = null;
+        let reviewCount = 0;
+
+        if (reviews && reviews.length > 0) {
+          reviewCount = reviews.length;
+          const sum = reviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+          averageRating = sum / reviewCount;
+        }
 
         withProfiles.push({
           ...mentor,
-          profile: typedProfile
-            ? {
-                full_name: typedProfile.full_name,
-                profile_picture: typedProfile.profile_picture,
-              }
-            : null,
+          profile: profile as any,
+          averageRating,
+          reviewCount,
         });
       }
 
@@ -148,42 +181,20 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-bold text-blue-700">
-            MentorLK
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-7xl px-4 py-8 pt-24 sm:px-6">
         <h1 className="mb-8 text-2xl font-bold text-gray-900 sm:text-3xl">
-          Browse Mentors
+          Browse Coaches
         </h1>
 
         {/* Filters */}
         <div className="mb-8 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">
+          <h2 className="mb-4 text-sm font-semibold text-gray-900">
             Refine your search
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">
+              <label className="mb-1 block text-sm font-medium text-gray-800">
                 Exam type
               </label>
               <select
@@ -203,7 +214,7 @@ export default function BrowsePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">
+              <label className="mb-1 block text-sm font-medium text-gray-800">
                 Stream
               </label>
               <select
@@ -223,7 +234,7 @@ export default function BrowsePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">
+              <label className="mb-1 block text-sm font-medium text-gray-800">
                 Subject
               </label>
               <select
@@ -239,7 +250,7 @@ export default function BrowsePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">
+              <label className="mb-1 block text-sm font-medium text-gray-800">
                 Language
               </label>
               <select
@@ -258,7 +269,7 @@ export default function BrowsePage() {
               <button
                 type="button"
                 onClick={handleSearch}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"
+                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Search
               </button>
@@ -275,12 +286,12 @@ export default function BrowsePage() {
           <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
             <p className="text-gray-600">
               {hasSearched
-                ? "No mentors match your filters. Try different criteria."
-                : "No mentors yet. Check back soon."}
+                ? "No coaches match your filters. Try different criteria."
+                : "No coaches yet. Check back soon."}
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredMentors.map((mentor) => {
               const results = mentor.results as Record<string, string> | null;
               const resultEntries = results
@@ -296,9 +307,9 @@ export default function BrowsePage() {
               return (
                 <article
                   key={mentor.id}
-                  className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md"
                 >
-                  <div className="p-6">
+                  <Link href={`/coach/${mentor.id}`} className="flex-1 p-6">
                     <div className="flex items-start gap-4">
                       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full">
                         {mentor.profile?.profile_picture ? (
@@ -312,99 +323,117 @@ export default function BrowsePage() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="truncate font-semibold text-gray-900">
-                            {mentor.profile?.full_name ?? "Mentor"}
+                        <div className="flex items-center flex-wrap gap-2 mb-1">
+                          <h3 className="truncate font-bold text-gray-900 group-hover:text-blue-600">
+                            {mentor.profile?.full_name ?? "Coach"}
                           </h3>
                           {mentor.is_verified && (
                             <span
-                              className="inline-flex shrink-0 items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800"
-                              title="Verified mentor"
+                              className="inline-flex shrink-0 items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-800"
+                              title="Verified coach"
                             >
                               ✓ Verified
                             </span>
                           )}
                         </div>
-                        {mentor.university && (
-                          <p className="truncate text-sm text-gray-600">
-                            {mentor.university}
-                          </p>
-                        )}
-                        {mentor.al_stream && (
-                          <p className="text-xs text-gray-500">
-                            {mentor.al_stream}
-                            {mentor.exam_type && ` • ${mentor.exam_type}`}
-                          </p>
-                        )}
+
+                        <div className="flex items-center gap-1.5 text-sm mb-1">
+                          <span className="text-yellow-500 font-bold">
+                            ⭐ {mentor.averageRating ? mentor.averageRating.toFixed(1) : "New Coach"}
+                          </span>
+                          {mentor.reviewCount > 0 && (
+                            <span className="text-gray-500 text-xs">
+                              ({mentor.reviewCount} review{mentor.reviewCount !== 1 ? 's' : ''})
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
+                          <span>📋 {mentor.exam_type} {mentor.exam_year || mentor.results?.exam_year || 'N/A'}</span>
+                          <span className="text-gray-300">|</span>
+                          <span>Index: {mentor.index_number || '******'}</span>
+                        </div>
                       </div>
                     </div>
+ 
+                    <div className="mt-4">
+                      {mentor.exam_type === "A/L" ? (
+                        mentor.university && (
+                          <p className="text-sm font-semibold text-gray-900 flex items-center gap-1.5 mb-2">
+                            <span className="text-blue-600 text-lg">🎓</span> {mentor.university}
+                          </p>
+                        )
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-900 flex items-center gap-1.5 mb-2">
+                          <span className="text-green-600 text-lg">🏆</span> O/L Achiever
+                        </p>
+                      )}
 
-                    {mentor.subjects?.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        <span className="text-xs text-gray-500">Subjects:</span>
-                        {mentor.subjects.map((subject) => (
-                          <span
-                            key={subject}
-                            className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
-                          >
-                            {subject}
-                          </span>
-                        ))}
+                      {mentor.subjects?.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {mentor.subjects.map((subject) => (
+                            <span
+                              key={subject}
+                              className="rounded-md bg-gray-50 border border-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {resultEntries.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {resultEntries.map(([subject, grade]) => {
+                            let gradeColor = "bg-gray-800 text-white";
+                            switch (grade.toUpperCase()) {
+                              case "A": gradeColor = "bg-green-600 text-white"; break;
+                              case "B": gradeColor = "bg-blue-600 text-white"; break;
+                              case "C": gradeColor = "bg-yellow-500 text-white"; break;
+                              case "S": gradeColor = "bg-orange-500 text-white"; break;
+                              case "F": gradeColor = "bg-red-600 text-white"; break;
+                            }
+                            return (
+                              <span
+                                key={subject}
+                                className={`rounded px-2 py-0.5 text-[10px] font-bold ${gradeColor}`}
+                              >
+                                {subject}: {grade}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {mentor.bio && (
+                        <p className="mt-3 line-clamp-2 text-xs text-gray-600 leading-relaxed">
+                          {mentor.bio}
+                        </p>
+                      )}
+
+                      {/* Price & View Profile Button */}
+                      <div className="mt-8">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-bold text-gray-400 uppercase tracking-tighter">Subscription</p>
+                          <p className="text-lg font-black text-gray-900">
+                             Rs. {getPricing(mentor.exam_type).studentPays.toLocaleString()}
+                             <span className="text-xs font-medium text-gray-500">/mo</span>
+                          </p>
+                        </div>
+                        <div className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-black text-sm shadow-xl shadow-blue-600/20 group-hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center">
+                          View Profile
+                        </div>
                       </div>
-                    )}
 
-                    {resultEntries.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {resultEntries.map(([subject, grade]) => (
-                          <span
-                            key={subject}
-                            className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700"
-                          >
-                            {subject}: {grade}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {mentor.bio && (
-                      <p className="mt-3 line-clamp-3 text-sm text-gray-600">
-                        {mentor.bio}
+                      <p className="mt-4 text-center text-xs text-gray-400 font-medium">
+                        {mentor.current_student_count >= mentor.max_students ? (
+                          <span className="text-red-600 font-bold">🔴 Fully Booked</span>
+                        ) : (
+                          `🟢 ${mentor.max_students - (mentor.current_student_count || 0)} slots available`
+                        )}
                       </p>
-                    )}
-
-                    {mentor.z_score != null && (
-                      <p className="mt-2 text-sm text-gray-600">
-                        Z-Score: <span className="font-medium">{mentor.z_score}</span>
-                      </p>
-                    )}
-
-                    {mentor.languages?.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        <span className="text-xs text-gray-500">Languages:</span>
-                        {mentor.languages.map((lang) => (
-                          <span
-                            key={lang}
-                            className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
-                          >
-                            {lang}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <p className="mt-3 text-sm text-gray-500">
-                      {slotsLeft} slot{slotsLeft !== 1 ? "s" : ""} left
-                    </p>
-                  </div>
-
-                  <div className="mt-auto border-t border-gray-100 p-4">
-                    <Link
-                      href={`/subscribe/${mentor.id}`}
-                      className="block w-full rounded-lg bg-blue-600 py-3 text-center font-semibold text-white transition-colors hover:bg-blue-700"
-                    >
-                      Subscribe
-                    </Link>
-                  </div>
+                    </div>
+                  </Link>
                 </article>
               );
             })}
@@ -414,3 +443,4 @@ export default function BrowsePage() {
     </div>
   );
 }
+

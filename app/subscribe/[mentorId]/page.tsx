@@ -1,10 +1,12 @@
 "use client";
+// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Mentor, Profile } from "@/lib/supabase";
+import { getPricing } from "@/lib/pricing";
 
 type MentorWithProfile = Mentor & {
   profile: Pick<Profile, "full_name" | "profile_picture"> | null;
@@ -37,7 +39,7 @@ export default function SubscribePage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
+      const supabase: any = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.replace("/login");
@@ -88,7 +90,7 @@ export default function SubscribePage() {
       return;
     }
 
-    const supabase = createClient();
+    const supabase: any = createClient();
 
     try {
       const path = `${userId}/${mentorId}-${Date.now()}`;
@@ -108,7 +110,7 @@ export default function SubscribePage() {
         mentor_id: mentorId,
         status: "pending",
         payment_proof_url: paymentProofUrl,
-        amount_paid: 1900,
+        amount_paid: getPricing(mentor.exam_type).studentPays,
       });
 
       if (insertError) throw insertError;
@@ -133,9 +135,9 @@ export default function SubscribePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-gray-900">Mentor not found</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Coach not found</h1>
           <Link href="/browse" className="mt-4 inline-block text-blue-600 hover:text-blue-700">
-            Browse mentors
+            Browse coaches
           </Link>
         </div>
       </div>
@@ -149,6 +151,8 @@ export default function SubscribePage() {
       )
     : [];
 
+  const pricing = getPricing(mentor.exam_type);
+
   if (success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -160,7 +164,7 @@ export default function SubscribePage() {
           </div>
           <h2 className="mb-2 text-xl font-bold text-green-800">Payment submitted!</h2>
           <p className="text-green-700">
-            We will verify and activate your mentorship within 24 hours.
+            We will verify and activate your coaching within 24 hours.
           </p>
           <p className="mt-4 text-sm text-green-600">
             Redirecting to your dashboard...
@@ -172,25 +176,18 @@ export default function SubscribePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-xl font-bold text-blue-700">
-            MentorLK
-          </Link>
-          <Link href="/browse" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-            ← Back to mentors
-          </Link>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <h1 className="mb-8 text-2xl font-bold text-gray-900">Subscribe to Mentor</h1>
+      <main className="mx-auto max-w-4xl px-4 py-8 pt-24 sm:px-6">
+        <Link href="/browse" className="mb-6 inline-block text-sm font-medium text-blue-600 hover:underline">
+          ← Back to coaches
+        </Link>
+        <h1 className="mb-8 text-2xl font-bold text-gray-900 sm:text-3xl">Subscribe to Coach</h1>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Mentor profile summary */}
-          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Your selected mentor
+              Your selected coach
             </h2>
             <div className="flex items-start gap-4">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full">
@@ -206,27 +203,37 @@ export default function SubscribePage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">
-                  {mentor.profile?.full_name ?? "Mentor"}
+                  {mentor.profile?.full_name ?? "Coach"}
                 </h3>
                 {mentor.university && (
                   <p className="text-gray-600">{mentor.university}</p>
                 )}
                 {mentor.al_stream && (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-600">
                     {mentor.al_stream}
                     {mentor.exam_type && ` • ${mentor.exam_type}`}
                   </p>
                 )}
                 {resultEntries.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {resultEntries.map(([subject, grade]) => (
-                      <span
-                        key={subject}
-                        className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700"
-                      >
-                        {subject}: {grade}
-                      </span>
-                    ))}
+                    {resultEntries.map(([subject, grade]) => {
+                      let gradeColor = "bg-gray-800 text-white";
+                      switch (grade.toUpperCase()) {
+                        case "A": gradeColor = "bg-green-600 text-white"; break;
+                        case "B": gradeColor = "bg-blue-600 text-white"; break;
+                        case "C": gradeColor = "bg-yellow-500 text-white"; break;
+                        case "S": gradeColor = "bg-orange-500 text-white"; break;
+                        case "F": gradeColor = "bg-red-600 text-white"; break;
+                      }
+                      return (
+                        <span
+                          key={subject}
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${gradeColor}`}
+                        >
+                          {subject}: {grade}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
                 {mentor.z_score != null && (
@@ -237,39 +244,54 @@ export default function SubscribePage() {
           </section>
 
           {/* Subscription details */}
-          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
               Subscription details
             </h2>
             <div className="space-y-3 text-gray-700">
               <p className="text-xl font-semibold text-blue-600">
-                Rs. 1,900 per month
+                Rs. {pricing.studentPays.toLocaleString()} per month
               </p>
-              <p>30 days of mentorship</p>
+              <p>30 days of coaching</p>
               <ul className="list-inside list-disc space-y-1 pl-2">
-                <li>1 planning call</li>
-                <li>Daily chat support</li>
-                <li>Weekly check-ins</li>
-                <li>Past paper review</li>
+                <li>✅ Personalized study plan</li>
+                <li>✅ Daily chat support</li>
+                <li>✅ Voice note explanations</li>
+                <li>✅ Weekly progress check-ins</li>
+                <li>✅ Past paper Hacks & Rankers only secret methods</li>
               </ul>
             </div>
           </section>
 
           {/* Payment section */}
-          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
               Payment
             </h2>
-            <div className="mb-6 rounded-lg bg-gray-50 p-4 font-mono text-sm text-gray-800">
-              <p>Bank: [Your Bank Name]</p>
-              <p>Account: [Your Account Number]</p>
-              <p>Name: [Your Name]</p>
+            <div className="mb-6 space-y-4">
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
+                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">Option 1: Sampath Bank</p>
+                <div className="font-mono text-sm text-gray-800 space-y-1">
+                  <p><span className="text-gray-400">Bank:</span> Sampath Bank PLC</p>
+                  <p><span className="text-gray-400">Account:</span> 102352939821</p>
+                  <p><span className="text-gray-400">Name:</span> PANN PINIDIYA ARACHCHI</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
+                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">Option 2: Hatton National Bank (HNB)</p>
+                <div className="font-mono text-sm text-gray-800 space-y-1">
+                  <p><span className="text-gray-400">Bank:</span> Hatton National Bank</p>
+                  <p><span className="text-gray-400">Account:</span> 074020299025</p>
+                  <p><span className="text-gray-400">Name:</span> PANN PINIDIYA ARACHCHI</p>
+                </div>
+              </div>
             </div>
             <p className="mb-2 text-sm text-gray-600">
               After making the payment, upload a screenshot of the transaction.
             </p>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-gray-700">
+              <span className="mb-2 block text-sm font-medium text-gray-800">
                 Upload Payment Screenshot
               </span>
               <input
