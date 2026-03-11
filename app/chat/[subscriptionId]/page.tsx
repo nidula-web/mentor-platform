@@ -22,7 +22,11 @@ export default function ChatPage() {
   const router = useRouter()
   const subscriptionId = params.subscriptionId as string
   const supabase: any = createClient()
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 39c6f1ff91a72817814d05dc45ea390435af629f
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -63,7 +67,81 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+<<<<<<< HEAD
   function isBlocked(text: string): boolean {
+=======
+  async function loadChat() {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setCurrentUserId(user.id)
+
+    // Get subscription details to find other user
+    const { data: sub }: any = await supabase
+      .from('subscriptions')
+      .select('student_id, mentor_id')
+      .eq('id', subscriptionId)
+      .single()
+
+    if (sub) {
+  const s: any = sub
+  // Find the other person's name
+  const otherId = s.student_id === user.id 
+    ? s.mentor_id 
+    : s.student_id
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', otherId)
+        .single()
+      
+      if (profile) setOtherUserName(profile.full_name)
+    }
+
+    // Load messages
+    const { data: msgs } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('subscription_id', subscriptionId)
+      .order('created_at', { ascending: true })
+
+    if (msgs) setMessages(msgs)
+    
+    // Mark messages as read
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('subscription_id', subscriptionId)
+      .neq('sender_id', user.id)
+
+    setLoading(false)
+  }
+
+  function setupRealtime() {
+    const channel = supabase
+      .channel('messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `subscription_id=eq.${subscriptionId}`
+        },
+        (payload) => {
+          setMessages(prev => [...prev, payload.new as Message])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  function checkForBlockedContent(text: string): boolean {
+>>>>>>> 39c6f1ff91a72817814d05dc45ea390435af629f
     for (const pattern of blockedPatterns) {
       if (pattern.test(text)) {
         return true
