@@ -19,12 +19,14 @@ export default function ChatPage() {
     const [lastSeen, setLastSeen] = useState(null)
     const [loading, setLoading] = useState(true)
     const [isRecording, setIsRecording] = useState(false)
+    const [recordingDuration, setRecordingDuration] = useState(0)
     const [blocked, setBlocked] = useState(false)
 
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const audioChunksRef = useRef<Blob[]>([])
+    const timerRef = useRef<any>(null)
 
     const blockedPatterns = [
         /07\d{8}/,
@@ -47,54 +49,70 @@ export default function ChatPage() {
         scrollToBottom()
     }, [messages])
 
+    useEffect(() => {
+        if (isRecording) {
+            setRecordingDuration(0)
+            timerRef.current = setInterval(() => {
+                setRecordingDuration(prev => prev + 1)
+            }, 1000)
+        } else {
+            clearInterval(timerRef.current)
+        }
+        return () => clearInterval(timerRef.current)
+    }, [isRecording])
+
     function scrollToBottom() {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
     }
 
     function isBlockedContent(text: string) {
         for (const pattern of blockedPatterns) {
-            if (pattern.test(text)) {
-                return true
-            }
+            if (pattern.test(text)) return true
         }
         return false
     }
 
     function formatLastSeen(dateString) {
-      if (!dateString) return ''
-      const now = new Date()
-      const date = new Date(dateString)
-      const diff = now.getTime() - date.getTime()
-      const mins = Math.floor(diff / 60000)
-      const hours = Math.floor(diff / 3600000)
-      const days = Math.floor(diff / 86400000)
-      if (mins < 1) return 'Just now'
-      if (mins < 60) return mins + 'm ago'
-      if (hours < 24) return hours + 'h ago'
-      if (days < 2) return 'Yesterday'
-      return date.toLocaleDateString()
+        if (!dateString) return ''
+        const now = new Date()
+        const date = new Date(dateString)
+        const diff = now.getTime() - date.getTime()
+        const mins = Math.floor(diff / 60000)
+        const hours = Math.floor(diff / 3600000)
+        const days = Math.floor(diff / 86400000)
+
+        if (mins < 1) return 'Just now'
+        if (mins < 60) return `${mins}m ago`
+        if (hours < 24) return `${hours}h ago`
+        
+        const yesterday = new Date(now)
+        yesterday.setDate(yesterday.getDate() - 1)
+        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+        
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
+
+    function formatRecordingTime(seconds: number) {
+        const m = Math.floor(seconds / 60)
+        const s = seconds % 60
+        return `${m}:${s < 10 ? '0' : ''}${s}`
     }
 
     async function loadChat() {
         try {
-            console.log('Loading chat for sub:', subscriptionId)
             const { data } = await supabase.auth.getUser()
             const user = data?.user
             if (!user) {
-                console.log('No user found, redirecting to login')
                 router.push('/login')
                 return
             }
             setCurrentUserId(user.id)
-            console.log('Current user:', user.id)
 
             const { data: sub } = await supabase
                 .from('subscriptions')
                 .select('student_id, mentor_id')
                 .eq('id', subscriptionId)
                 .single()
-
-            console.log('Subscription data:', sub)
 
             if (sub) {
                 const isStudent = sub.student_id === user.id
@@ -106,11 +124,8 @@ export default function ChatPage() {
                         .select('user_id')
                         .eq('id', sub.mentor_id)
                         .single()
-                    console.log('Mentor for student:', mentor)
                     if (mentor) otherUserId = mentor.user_id
                 }
-
-                console.log('Identified otherUserId:', otherUserId)
 
                 if (otherUserId) {
                     const { data: profile } = await supabase
@@ -118,8 +133,6 @@ export default function ChatPage() {
                         .select('full_name, profile_picture, is_online, last_seen')
                         .eq('id', otherUserId)
                         .single()
-
-                    console.log('Other user profile:', profile)
 
                     if (profile) {
                         setOtherUserName(profile.full_name)
@@ -136,8 +149,6 @@ export default function ChatPage() {
                 .eq('subscription_id', subscriptionId)
                 .order('created_at', { ascending: true })
             
-            console.log('Messages loaded:', msgs?.length || 0)
-
             if (msgs) setMessages(msgs)
 
             await supabase
@@ -146,7 +157,7 @@ export default function ChatPage() {
                 .eq('subscription_id', subscriptionId)
                 .neq('sender_id', user.id)
 
-            const channel = supabase
+            supabase
                 .channel('chat-' + subscriptionId)
                 .on(
                     'postgres_changes',
@@ -160,11 +171,22 @@ export default function ChatPage() {
                         setMessages(prev => [...prev, payload.new])
                     }
                 )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: 'subscription_id=eq.' + subscriptionId
+                    },
+                    (payload: any) => {
+                        setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
+                    }
+                )
                 .subscribe()
 
             setLoading(false)
         } catch (err) {
-            console.error('Error loading chat:', err)
             setLoading(false)
         }
     }
@@ -178,23 +200,23 @@ export default function ChatPage() {
             return
         }
 
+        const msgContent = newMessage.trim()
+        setNewMessage('')
+
         await supabase.from('messages').insert({
             subscription_id: subscriptionId,
             sender_id: currentUserId,
-            content: newMessage.trim(),
+            content: msgContent,
             message_type: 'text',
             is_read: false
         })
-
-        setNewMessage('')
     }
 
     async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
         if (!file || !currentUserId) return
 
-        const fileName = currentUserId + '-' + Date.now() + '-' + file.name
-
+        const fileName = `${currentUserId}-${Date.now()}-${file.name}`
         const { error } = await supabase.storage
             .from('chat-images')
             .upload(fileName, file)
@@ -226,23 +248,17 @@ export default function ChatPage() {
             mediaRecorderRef.current = mediaRecorder
             audioChunksRef.current = []
 
-            mediaRecorder.ondataavailable = (e) => {
-                audioChunksRef.current.push(e.data)
-            }
-
+            mediaRecorder.ondataavailable = (e) => audioChunksRef.current.push(e.data)
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
                 stream.getTracks().forEach(track => track.stop())
 
-                const fileName = currentUserId + '-' + Date.now() + '.webm'
+                const fileName = `${currentUserId}-${Date.now()}.webm`
                 const { error } = await supabase.storage
                     .from('voice-messages')
                     .upload(fileName, audioBlob)
 
-                if (error) {
-                    alert('Failed to upload voice message')
-                    return
-                }
+                if (error) return
 
                 const { data: urlData } = supabase.storage
                     .from('voice-messages')
@@ -282,121 +298,211 @@ export default function ChatPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <p className="text-xl">Loading chat...</p>
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col h-screen bg-slate-50">
-            {/* Header */}
-            <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm z-10">
-                <button 
-                    onClick={() => router.back()} 
-                    className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-all active:scale-90"
-                >
+        <div className="flex flex-col h-screen bg-[#e5ddd5] overflow-hidden">
+            {/* WhatsApp Header */}
+            <div className="fixed top-0 left-0 right-0 h-[60px] bg-white shadow-sm flex items-center px-2 py-3 z-50 transition-all">
+                <button onClick={() => router.back()} className="p-2 text-slate-600 hover:bg-slate-100 rounded-full active:scale-90 transition-all">
                     <span className="text-xl">←</span>
                 </button>
                 
-                <div className="relative">
-                    {otherUserPicture ? (
-                        <img 
-                            src={otherUserPicture} 
-                            alt={otherUserName} 
-                            className="w-11 h-11 rounded-full object-cover ring-2 ring-white shadow-sm" 
-                        />
-                    ) : (
-                        <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm ring-2 ring-white">
-                            {otherUserName.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    {isOnline && (
-                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
-                    )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <h1 className="font-bold text-slate-900 text-base sm:text-lg truncate leading-none mb-1">
-                        {otherUserName}
-                    </h1>
-                    <div className="flex items-center gap-1.5">
-                        {isOnline ? (
-                            <span className="text-[11px] font-bold text-green-600 uppercase tracking-widest flex items-center gap-1 text-xs">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                                Online
-                            </span>
+                <div className="flex items-center flex-1 ml-1 gap-3 overflow-hidden">
+                    <div className="relative flex-shrink-0">
+                        {otherUserPicture ? (
+                            <img src={otherUserPicture} alt="" className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-100" />
                         ) : (
-                            <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 text-xs">
-                                {lastSeen ? `Last seen ${formatLastSeen(lastSeen)}` : 'Offline'}
-                            </span>
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm">
+                                {otherUserName.charAt(0).toUpperCase()}
+                            </div>
                         )}
+                        {isOnline && (
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col flex-1 min-w-0">
+                        <h1 className="font-bold text-[#111b21] text-[16px] truncate leading-tight">
+                            {otherUserName}
+                        </h1>
+                        <div className="flex items-center gap-1">
+                            {isOnline ? (
+                                <span className="text-[12px] text-green-600 font-medium">Online</span>
+                            ) : (
+                                <span className="text-[12px] text-slate-500 truncate">
+                                    {lastSeen ? `Last seen ${formatLastSeen(lastSeen)}` : 'Offline'}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex gap-1">
-                    <button className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 transition-all opacity-50 cursor-not-allowed">
-                        📞
-                    </button>
-                    <button className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-50 transition-all opacity-50 cursor-not-allowed">
-                        📹
+                <div className="flex items-center gap-1">
+                    <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full transition-all">
+                        <span className="text-xl">⋮</span>
                     </button>
                 </div>
             </div>
 
-            {blocked && (
-                <div className="bg-amber-50 border-b border-amber-100 text-amber-800 p-3 text-center text-[11px] font-medium flex items-center justify-center gap-2">
-                    <span>🔒 Personal contact details are protected for your security.</span>
-                </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {messages.length === 0 && (
-                    <div className="text-center text-gray-400 mt-10">
-                        <p className="text-4xl mb-2">👋</p>
-                        <p>Say hello to your Exam Coach!</p>
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto px-3 pt-[70px] pb-[80px] space-y-2 scroll-smooth">
+                {messages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
+                        <span className="text-6xl mb-4">👋</span>
+                        <p className="font-medium">Say hello to your {otherUserName}!</p>
                     </div>
-                )}
+                ) : (
+                    messages.map((msg) => {
+                        const isMe = msg.sender_id === currentUserId
+                        return (
+                            <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`relative max-w-[85%] px-2 py-1.5 shadow-sm min-w-[80px] ${
+                                    isMe 
+                                    ? 'bg-[#dcf8c6] rounded-2xl rounded-tr-none' 
+                                    : 'bg-white rounded-2xl rounded-tl-none'
+                                }`}>
+                                    {msg.message_type === 'text' && (
+                                        <p className="text-[14.5px] text-[#111b21] leading-relaxed break-words pr-12">
+                                            {msg.content}
+                                        </p>
+                                    )}
 
-                {messages.map((msg: any) => {
-                    const isMe = msg.sender_id === currentUserId
-                    return (
-                        <div key={msg.id} className={'flex ' + (isMe ? 'justify-end' : 'justify-start')}>
-                            <div className={'max-w-[75%] rounded-2xl p-3 ' + (isMe ? 'bg-blue-500 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm shadow')}>
-                                {msg.message_type === 'text' && msg.content && (
-                                    <p className="break-words">{msg.content}</p>
-                                )}
+                                    {msg.message_type === 'image' && (
+                                        <div className="mb-4 mt-1">
+                                            <img 
+                                                src={msg.image_url} 
+                                                alt="" 
+                                                className="rounded-lg max-w-[250px] max-h-[300px] object-cover cursor-pointer hover:opacity-95 transition-all" 
+                                                onClick={() => window.open(msg.image_url, '_blank')}
+                                            />
+                                        </div>
+                                    )}
 
-                                {msg.message_type === 'image' && msg.image_url && (
-                                    <img src={msg.image_url} alt="Shared" className="rounded-lg max-w-full max-h-60 cursor-pointer" onClick={() => window.open(msg.image_url, '_blank')} />
-                                )}
+                                    {msg.message_type === 'voice' && (
+                                        <div className="flex items-center gap-2 py-2 pr-10 min-w-[200px]">
+                                            <button className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-blue-500">
+                                                ▶
+                                            </button>
+                                            <div className="flex-1 h-1 bg-slate-200 rounded-full relative overflow-hidden">
+                                                <div className="absolute inset-y-0 left-0 bg-blue-400 w-1/3"></div>
+                                            </div>
+                                            <audio className="hidden">
+                                                <source src={msg.voice_url} type="audio/webm" />
+                                            </audio>
+                                        </div>
+                                    )}
 
-                                {msg.message_type === 'voice' && msg.voice_url && (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">🎤</span>
-                                        <audio controls className="max-w-[200px] h-8">
-                                            <source src={msg.voice_url} type="audio/webm" />
-                                        </audio>
+                                    <div className="absolute bottom-1 right-2 flex items-center gap-1">
+                                        <span className="text-[10px] text-slate-500 font-medium">
+                                            {formatTime(msg.created_at)}
+                                        </span>
+                                        {isMe && (
+                                            <span className={`text-[12px] font-bold ${msg.is_read ? 'text-blue-500' : 'text-slate-400'}`}>
+                                                {msg.is_read ? '✓✓' : '✓'}
+                                            </span>
+                                        )}
                                     </div>
-                                )}
-
-                                <div className={'flex items-center justify-end gap-1 mt-1 text-xs ' + (isMe ? 'text-blue-100' : 'text-gray-400')}>
-                                    <span>{formatTime(msg.created_at)}</span>
-                                    {isMe && <span>{msg.is_read ? '✓✓' : '✓'}</span>}
                                 </div>
                             </div>
-                        </div>
-                    )
-                })}
+                        )
+                    })
+                )}
                 <div ref={messagesEndRef} />
             </div>
 
-            <div className="bg-white p-3 border-t flex items-center gap-2">
-                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full text-xl">📎</button>
-                <button onClick={isRecording ? stopRecording : startRecording} className={'p-2 rounded-full text-xl ' + (isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-500 hover:bg-gray-100')}>🎤</button>
-                <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="Type a message..." className="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:border-blue-500" />
-                <button onClick={sendMessage} disabled={!newMessage.trim()} className={'p-2 rounded-full text-xl ' + (newMessage.trim() ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-200 text-gray-400')}>➤</button>
+            {/* Safety Warning */}
+            {blocked && (
+                <div className="fixed bottom-[80px] left-4 right-4 bg-white/90 backdrop-blur border border-amber-200 p-2 rounded-xl text-center shadow-lg z-40 animate-bounce">
+                    <p className="text-[12px] text-amber-800 font-medium">
+                        🔒 Your privacy is protected on ExamCoach
+                    </p>
+                </div>
+            )}
+
+            {/* Input Area */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-2 z-50">
+                {isRecording ? (
+                    <div className="flex items-center w-full bg-red-50 rounded-full px-4 py-2 transition-all duration-300 gap-3 border border-red-100">
+                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                        <span className="text-red-600 font-bold text-sm tracking-wide">Recording {formatRecordingTime(recordingDuration)}...</span>
+                        <div className="flex-1 text-center">
+                            <span className="text-red-400 text-xs font-medium animate-pulse">Slide to cancel</span>
+                        </div>
+                        <button onClick={stopRecording} className="w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all">
+                            ➤
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 max-w-full">
+                        <button 
+                            onClick={() => fileInputRef.current?.click()} 
+                            className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-500 rounded-full hover:bg-slate-100 active:scale-90 transition-all border border-slate-100"
+                        >
+                            <span className="text-xl">📎</span>
+                        </button>
+                        <input type="file" className="hidden" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" />
+
+                        <div className="flex-1 bg-[#f0f2f5] rounded-[24px] px-4 py-2 border border-transparent focus-within:border-slate-200 transition-all">
+                            <textarea
+                                value={newMessage}
+                                onChange={(e) => {
+                                    setNewMessage(e.target.value)
+                                    e.target.style.height = 'auto'
+                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        sendMessage()
+                                    }
+                                }}
+                                placeholder="Type a message..."
+                                rows={1}
+                                className="w-full bg-transparent text-[15px] text-[#111b21] outline-none resize-none py-1 leading-snug placeholder-slate-400"
+                            />
+                        </div>
+
+                        {newMessage.trim() ? (
+                            <button 
+                                onClick={sendMessage}
+                                className="w-11 h-11 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-600 active:scale-90 transition-all"
+                            >
+                                <span className="text-lg">➤</span>
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={startRecording}
+                                className="w-11 h-11 bg-slate-50 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-100 active:scale-90 transition-all border border-slate-100"
+                            >
+                                <span className="text-lg">🎤</span>
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
+
+            <style jsx global>{`
+                body {
+                    overflow: hidden;
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                }
+                ::-webkit-scrollbar {
+                    width: 4px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: rgba(0,0,0,0.1);
+                    border-radius: 10px;
+                }
+            `}</style>
         </div>
     )
 }
