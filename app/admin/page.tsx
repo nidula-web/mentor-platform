@@ -40,7 +40,7 @@ export default function AdminPage() {
   }
 
   async function loadPendingSubscriptions() {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('subscriptions')
       .select(`
         id,
@@ -63,13 +63,13 @@ export default function AdminPage() {
   }
 
   async function handleApprove(subscriptionId: string) {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({
-        status: 'active',
-        started_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      })
+  const { error } = await (supabase as any)
+  .from('subscriptions')
+  .update({
+    status: 'active',
+    started_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  })
       .eq('id', subscriptionId)
 
     if (!error) {
@@ -81,9 +81,10 @@ export default function AdminPage() {
   }
 
   async function handleReject(subscriptionId: string) {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ status: 'cancelled' })
+    const { error } = await (supabase as any)
+     (supabase as any)
+.from('subscriptions')
+.update({ status: 'cancelled' })
       .eq('id', subscriptionId)
 
     if (!error) {
