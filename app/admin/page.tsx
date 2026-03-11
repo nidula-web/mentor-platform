@@ -53,7 +53,6 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-<<<<<<< HEAD
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (password === 'admin123') { // Simple hardcoded password as requested
@@ -98,10 +97,6 @@ export default function AdminPage() {
 
     // 3. Pending Subscriptions
     const { data: pendingSubs }: any = await supabase
-=======
-  async function loadPendingSubscriptions() {
-    const { data, error } = await (supabase as any)
->>>>>>> 39c6f1ff91a72817814d05dc45ea390435af629f
       .from('subscriptions')
       .select(`
         id,
@@ -137,7 +132,6 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-<<<<<<< HEAD
   async function handleApprove(sub: any) {
     const { error }: any = await supabase.from('subscriptions')
       .update({
@@ -146,17 +140,6 @@ export default function AdminPage() {
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       })
       .eq('id', sub.id)
-=======
-  async function handleApprove(subscriptionId: string) {
-  const { error } = await (supabase as any)
-  .from('subscriptions')
-  .update({
-    status: 'active',
-    started_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-  })
-      .eq('id', subscriptionId)
->>>>>>> 39c6f1ff91a72817814d05dc45ea390435af629f
 
     if (!error) {
       alert('Approved!')
@@ -166,19 +149,10 @@ export default function AdminPage() {
     }
   }
 
-<<<<<<< HEAD
-  async function handleReject(sub: any) {
+  async function handleReject(subscriptionId: string) {
     const { error }: any = await supabase.from('subscriptions')
       .update({ status: 'cancelled' })
-      .eq('id', sub.id)
-=======
-  async function handleReject(subscriptionId: string) {
-    const { error } = await (supabase as any)
-     (supabase as any)
-.from('subscriptions')
-.update({ status: 'cancelled' })
       .eq('id', subscriptionId)
->>>>>>> 39c6f1ff91a72817814d05dc45ea390435af629f
 
     if (!error) {
       alert('Rejected')

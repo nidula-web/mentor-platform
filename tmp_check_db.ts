@@ -1,4 +1,3 @@
-
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -7,16 +6,17 @@ const supabase = createClient(
 );
 
 async function checkSchema() {
-  const { data, error } = await supabase
-    .from("mentors")
-    .select("*")
-    .limit(1);
+  console.log("--- Profiles ---");
+  const { data: profiles } = await supabase.from("profiles").select("*").limit(1);
+  console.log("Profile data:", profiles?.[0]);
 
-  if (error) {
-    console.error("Error fetching mentors:", error);
-  } else {
-    console.log("Mentors columns:", Object.keys(data[0] || {}));
-  }
+  console.log("\n--- Subscriptions ---");
+  const { data: subs } = await supabase.from("subscriptions").select("*").limit(1);
+  console.log("Subscription data:", subs?.[0]);
+
+  console.log("\n--- Mentors ---");
+  const { data: mentors } = await supabase.from("mentors").select("*").limit(1);
+  console.log("Mentor data:", mentors?.[0]);
 }
 
 checkSchema();
