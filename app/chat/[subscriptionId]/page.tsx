@@ -19,7 +19,7 @@ interface Message {
 export default function ChatPage() {
   const params = useParams()
   const subscriptionId = params.subscriptionId as string
-  const supabase = createClient()
+  const supabase: any = createClient()
   
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -68,7 +68,7 @@ export default function ChatPage() {
     setCurrentUserId(user.id)
 
     // Get subscription details to find other user
-    const { data: sub } = await supabase
+    const { data: sub }: any = await supabase
       .from('subscriptions')
       .select('student_id, mentor_id')
       .eq('id', subscriptionId)
