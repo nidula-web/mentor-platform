@@ -84,7 +84,7 @@ export default function CoachGuide({ onClose }: CoachGuideProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
+      <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-[32px] shadow-2xl overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
         
         {/* Close Button */}
         <button 
@@ -94,39 +94,39 @@ export default function CoachGuide({ onClose }: CoachGuideProps) {
           ✕
         </button>
 
-        <div className="p-8 sm:p-10 pt-12">
+        <div className="p-6 sm:p-10 pt-10 sm:pt-12">
           {/* Content Area */}
-          <div className="min-h-[320px] flex flex-col items-center text-center">
-            <div className="mb-8 transform transition-transform duration-500 scale-110">
-               {page === 1 && <span className="text-6xl">💎</span>}
-               {page === 2 && <span className="text-6xl">📚</span>}
-               {page === 3 && <span className="text-6xl">🛡️</span>}
-               {page === 4 && <span className="text-6xl">💸</span>}
+          <div className="min-h-[280px] sm:min-h-[320px] flex flex-col items-center text-center">
+            <div className="mb-6 sm:mb-8 transform transition-transform duration-500 scale-100 sm:scale-110">
+               {page === 1 && <span className="text-5xl sm:text-6xl">💎</span>}
+               {page === 2 && <span className="text-5xl sm:text-6xl">📚</span>}
+               {page === 3 && <span className="text-5xl sm:text-6xl">🛡️</span>}
+               {page === 4 && <span className="text-5xl sm:text-6xl">💸</span>}
             </div>
 
-            <div className="space-y-2 mb-6">
-              <h2 className="text-2xl font-black text-gray-900 leading-tight">
+            <div className="space-y-1 sm:space-y-2 mb-6">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
                 {pages[page - 1].titleEn}
               </h2>
-              <h3 className="text-xl font-bold text-blue-600 leading-tight italic">
+              <h3 className="text-lg sm:text-xl font-bold text-blue-600 leading-tight italic">
                 {pages[page - 1].titleSi}
               </h3>
             </div>
 
-            <div className="text-gray-600 font-medium leading-relaxed mb-4">
+            <div className="text-gray-600 text-sm sm:text-base font-medium leading-relaxed mb-4">
               {pages[page - 1].contentEn}
             </div>
-            <div className="text-gray-500 font-bold italic leading-relaxed">
+            <div className="text-gray-500 text-xs sm:text-sm font-bold italic leading-relaxed">
               {pages[page - 1].contentSi}
             </div>
           </div>
 
           {/* Progress Dots */}
-          <div className="flex justify-center gap-2 mb-10">
+          <div className="flex justify-center gap-2 mb-8 sm:mb-10">
             {[1, 2, 3, 4].map((i) => (
               <div 
                 key={i} 
-                className={`h-2 rounded-full transition-all duration-300 ${page === i ? 'w-8 bg-blue-600' : 'w-2 bg-gray-200'}`}
+                className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${page === i ? 'w-6 sm:w-8 bg-blue-600' : 'w-1.5 sm:w-2 bg-gray-200'}`}
               />
             ))}
           </div>
@@ -145,7 +145,7 @@ export default function CoachGuide({ onClose }: CoachGuideProps) {
             {page < totalPages ? (
               <button 
                 onClick={() => setPage(page + 1)}
-                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all active:scale-95"
+                className="flex-[2] py-3.5 sm:py-4 bg-blue-600 text-white rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all active:scale-95"
               >
                 Next →
               </button>
