@@ -150,7 +150,7 @@ export default function Navbar() {
                       📊 Dashboard
                     </Link>
                     <Link
-                      href="/profile/settings"
+                      href={profile.role === 'mentor' ? "/mentor/profile" : "/student/profile"}
                       className="flex items-center h-14 px-4 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                       onClick={() => setIsProfileOpen(false)}
                     >
