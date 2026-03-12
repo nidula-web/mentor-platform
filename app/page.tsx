@@ -212,6 +212,14 @@ export default function Home() {
                   >
                     Go to Dashboard
                   </Link>
+                  {mentorId && (
+                    <Link
+                      href={`/coach/${mentorId}`}
+                      className="flex w-full sm:max-w-xs items-center justify-center rounded-2xl bg-slate-900 px-8 py-5 text-lg sm:text-xl font-black text-white transition-all hover:bg-black hover:-translate-y-1 active:scale-95 text-center"
+                    >
+                      View Your Profile
+                    </Link>
+                  )}
                 </>
               ) : (
                 <>
