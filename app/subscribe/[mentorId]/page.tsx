@@ -269,23 +269,33 @@ export default function SubscribePage() {
               Payment
             </h2>
             <div className="mb-6 space-y-4">
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">Option 1: Sampath Bank</p>
-                <div className="font-mono text-sm text-gray-800 space-y-1">
-                  <p><span className="text-gray-400">Bank:</span> Sampath Bank PLC</p>
-                  <p><span className="text-gray-400">Branch:</span> Kuliyapitiya</p>
-                  <p><span className="text-gray-400">Account:</span> 102352939821</p>
-                  <p><span className="text-gray-400">Name:</span> PANN PINIDIYA ARACHCHI</p>
+              <div className="rounded-xl bg-white p-5 border border-gray-200 shadow-sm hover:border-orange-200 hover:shadow-md transition-all">
+                <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-4 border-b pb-2">Option 1: Sampath Bank</p>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black text-xl shadow-inner border border-orange-600">
+                    S
+                  </div>
+                  <div className="font-mono text-sm text-gray-800 space-y-1">
+                    <p><span className="text-gray-400 font-sans text-xs">Bank:</span> Sampath Bank PLC</p>
+                    <p><span className="text-gray-400 font-sans text-xs">Branch:</span> Kuliyapitiya</p>
+                    <p><span className="text-gray-400 font-sans text-xs">Account:</span> <span className="font-bold text-gray-900 text-base">102352939821</span></p>
+                    <p><span className="text-gray-400 font-sans text-xs">Name:</span> PANN PINIDIYA ARACHCHI</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">Option 2: Hatton National Bank (HNB)</p>
-                <div className="font-mono text-sm text-gray-800 space-y-1">
-                  <p><span className="text-gray-400">Bank:</span> Hatton National Bank</p>
-                  <p><span className="text-gray-400">Branch:</span> Kuliyapitiya</p>
-                  <p><span className="text-gray-400">Account:</span> 074020299025</p>
-                  <p><span className="text-gray-400">Name:</span> PANN PINIDIYA ARACHCHI</p>
+              <div className="rounded-xl bg-white p-5 border border-gray-200 shadow-sm hover:border-yellow-400 hover:shadow-md transition-all">
+                <p className="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-4 border-b pb-2">Option 2: Hatton National Bank</p>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-yellow-400 text-gray-900 flex items-center justify-center font-black text-xl shadow-inner border border-yellow-500">
+                    HNB
+                  </div>
+                  <div className="font-mono text-sm text-gray-800 space-y-1">
+                    <p><span className="text-gray-400 font-sans text-xs">Bank:</span> Hatton National Bank</p>
+                    <p><span className="text-gray-400 font-sans text-xs">Branch:</span> Kuliyapitiya</p>
+                    <p><span className="text-gray-400 font-sans text-xs">Account:</span> <span className="font-bold text-gray-900 text-base">074020299025</span></p>
+                    <p><span className="text-gray-400 font-sans text-xs">Name:</span> PANN PINIDIYA ARACHCHI</p>
+                  </div>
                 </div>
               </div>
             </div>
