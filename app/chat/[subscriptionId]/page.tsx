@@ -152,7 +152,10 @@ export default function ChatPage() {
                 .eq('subscription_id', subscriptionId)
                 .order('created_at', { ascending: true })
             
-            if (msgs) setMessages(msgs)
+            if (msgs) {
+                console.log('Messages:', msgs)
+                setMessages(msgs)
+            }
 
             await supabase
                 .from('messages')
@@ -404,9 +407,35 @@ export default function ChatPage() {
                                         </div>
                                     )}
 
-                                    {msg.message_type === 'voice' && (
-                                        <div className="py-2 pr-10">
-                                            <audio controls className="max-w-[200px] h-10">
+                                    {msg.message_type === 'voice' && msg.voice_url && (
+                                        <div className="flex items-center gap-3 min-w-[200px] py-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    const audio = document.getElementById('audio-' + msg.id) as HTMLAudioElement
+                                                    if (audio) {
+                                                        if (audio.paused) {
+                                                            audio.play()
+                                                        } else {
+                                                            audio.pause()
+                                                        }
+                                                    }
+                                                }}
+                                                className={'w-10 h-10 rounded-full flex items-center justify-center text-lg ' + 
+                                                    (isMe ? 'bg-blue-400 text-white' : 'bg-gray-300 text-gray-700')}
+                                            >
+                                                ▶
+                                            </button>
+                                            <div className="flex-1">
+                                                <div className={'h-1 rounded-full ' + (isMe ? 'bg-blue-300' : 'bg-gray-300')}>
+                                                    <div className={'h-1 rounded-full ' + (isMe ? 'bg-white' : 'bg-blue-500')} 
+                                                        style={{width: '0%'}}></div>
+                                                </div>
+                                            </div>
+                                            <span className={'text-xs ' + (isMe ? 'text-blue-100' : 'text-gray-400')}>
+                                                🎤
+                                            </span>
+                                            <audio id={'audio-' + msg.id} className="hidden">
                                                 <source src={msg.voice_url} type="audio/webm" />
                                             </audio>
                                         </div>
