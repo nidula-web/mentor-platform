@@ -130,6 +130,14 @@ export default function ChatPage() {
     ]
 
     useEffect(() => {
+        const navbar = document.querySelector('nav')
+        if (navbar) navbar.style.display = 'none'
+        return () => {
+            if (navbar) navbar.style.display = ''
+        }
+    }, [])
+
+    useEffect(() => {
         loadChat()
     }, [])
 
@@ -406,16 +414,16 @@ export default function ChatPage() {
 
     if (loading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-gray-100">
+            <div className="h-screen flex items-center justify-center bg-gray-100" style={{ height: '100dvh' }}>
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         )
     }
 
     return (
-        <div className="h-screen flex flex-col bg-[#e5ddd5]">
+        <div className="flex flex-col bg-[#e5ddd5]" style={{ height: '100dvh' }}>
             {/* Header - Fixed */}
-            <div className="h-16 flex-shrink-0 bg-white shadow-sm flex items-center px-2 py-3 z-50">
+            <div className="flex-shrink-0 h-16 bg-white shadow-sm flex items-center px-2 py-3 z-50">
                 <button onClick={() => router.back()} className="p-2 text-slate-600 hover:bg-slate-100 rounded-full active:scale-90 transition-all">
                     <span className="text-xl">←</span>
                 </button>
@@ -457,8 +465,15 @@ export default function ChatPage() {
                 </div>
             </div>
 
-            {/* Messages Area - Scrollable */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scroll-smooth">
+            {/* Blocked warning */}
+            {blocked && (
+                <div className="flex-shrink-0 bg-red-500 text-white p-2 text-center text-sm shadow-md z-40">
+                    🔒 Your privacy is protected on ExamCoach
+                </div>
+            )}
+
+            {/* Messages Area - SCROLLABLE */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-2 scroll-smooth">
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
                         <span className="text-6xl mb-4">👋</span>
@@ -513,98 +528,74 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} className="h-px" />
                 
                 {uploading && (
-                    <div className="flex justify-end">
-                        <div className="bg-blue-100 rounded-2xl p-3 max-w-[75%]">
+                    <div className="flex justify-end mt-2 animate-pulse">
+                        <div className="bg-blue-50 rounded-2xl p-2 max-w-[75%] shadow-sm">
                             <div className="flex items-center gap-2">
-                                <div className="animate-spin text-xl">⏳</div>
-                                <span className="text-sm text-gray-600">Sending image...</span>
+                                <div className="text-lg">⏳</div>
+                                <span className="text-xs text-blue-600 font-bold">Sending image...</span>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {recordingUploading && (
-                    <div className="flex justify-end">
-                        <div className="bg-blue-100 rounded-2xl p-3">
+                    <div className="flex justify-end mt-2 animate-pulse">
+                        <div className="bg-blue-50 rounded-2xl p-2 shadow-sm">
                             <div className="flex items-center gap-2">
-                                <div className="animate-spin text-xl">⏳</div>
-                                <span className="text-sm text-gray-600">Sending voice message...</span>
+                                <div className="text-lg">⏳</div>
+                                <span className="text-xs text-blue-600 font-bold">Sending voice...</span>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Safety Warning */}
-            {blocked && (
-                <div className="fixed bottom-[80px] left-4 right-4 bg-white/90 backdrop-blur border border-amber-200 p-2 rounded-xl text-center shadow-lg z-40 animate-bounce">
-                    <p className="text-[12px] text-amber-800 font-medium">
-                        🔒 Your privacy is protected on ExamCoach
-                    </p>
-                </div>
-            )}
+            {/* Input Area - ALWAYS VISIBLE */}
+            <div className="flex-shrink-0 bg-white border-t p-2 flex items-center gap-2 z-50"
+                 style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
+                
+                <input type="file" accept="image/*" ref={fileInputRef} 
+                       onChange={handleImageUpload} className="hidden" />
+                
+                <button 
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={uploading}
+                    className={`w-10 h-10 flex-shrink-0 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-full text-xl ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    📎
+                </button>
 
-            {/* Input Area - Fixed */}
-            <div className="flex-shrink-0 bg-white border-t border-slate-100 p-2 z-50">
-                {isRecording ? (
-                    <div className="flex items-center w-full bg-red-50 rounded-full px-4 py-2 transition-all duration-300 gap-3 border border-red-100">
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
-                        <span className="text-red-600 font-bold text-sm tracking-wide">Recording {formatRecordingTime(recordingDuration)}...</span>
-                        <div className="flex-1 text-center">
-                            <span className="text-red-400 text-xs font-medium animate-pulse">Slide to cancel</span>
-                        </div>
-                        <button onClick={stopRecording} className="w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all">
-                            ➤
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-2 max-w-full">
-                        <button 
-                            onClick={() => fileInputRef.current?.click()} 
-                            disabled={uploading}
-                            className={`w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-500 rounded-full hover:bg-slate-100 active:scale-90 transition-all border border-slate-100 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            <span className="text-xl">📎</span>
-                        </button>
-                        <input type="file" className="hidden" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" />
+                <button 
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={'w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-xl ' + 
+                               (isRecording ? 'bg-red-500 text-white animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'text-gray-500 hover:bg-gray-100')}
+                >
+                    {isRecording ? '■' : '🎤'}
+                </button>
 
-                        <div className="flex-1 bg-[#f0f2f5] rounded-[24px] px-4 py-2 border border-transparent focus-within:border-slate-200 transition-all">
-                            <textarea
-                                value={newMessage}
-                                onChange={(e) => {
-                                    setNewMessage(e.target.value)
-                                    e.target.style.height = 'auto'
-                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault()
-                                        sendMessage()
-                                    }
-                                }}
-                                placeholder="Type a message..."
-                                rows={1}
-                                className="w-full bg-transparent text-[15px] text-[#111b21] outline-none resize-none py-1 leading-snug placeholder-slate-400"
-                            />
-                        </div>
+                <input 
+                    type="text" 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => { 
+                        if (e.key === 'Enter' && !e.shiftKey) { 
+                            e.preventDefault(); 
+                            sendMessage() 
+                        }
+                    }}
+                    placeholder={isRecording ? `Recording ${formatRecordingTime(recordingDuration)}...` : "Type a message..."}
+                    disabled={isRecording}
+                    className="flex-1 min-w-0 border rounded-[24px] px-4 py-2 text-[15px] focus:outline-none focus:border-blue-500 bg-[#f0f2f5] min-h-[40px] text-gray-900 disabled:opacity-75 disabled:bg-red-50 disabled:border-red-200" 
+                />
 
-                        {newMessage.trim() ? (
-                            <button 
-                                onClick={sendMessage}
-                                className="w-11 h-11 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-blue-600 active:scale-90 transition-all"
-                            >
-                                <span className="text-lg">➤</span>
-                            </button>
-                        ) : (
-                            <button 
-                                onClick={startRecording}
-                                className="w-11 h-11 bg-slate-50 text-slate-500 rounded-full flex items-center justify-center hover:bg-slate-100 active:scale-90 transition-all border border-slate-100"
-                            >
-                                <span className="text-lg">🎤</span>
-                            </button>
-                        )}
-                    </div>
-                )}
+                <button 
+                    onClick={sendMessage} 
+                    disabled={!newMessage.trim() || isRecording}
+                    className={'w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-xl ' + 
+                               (newMessage.trim() && !isRecording ? 'bg-blue-500 text-white shadow-md active:scale-95 transition-transform' : 'bg-gray-200 text-gray-400')}
+                >
+                    ➤
+                </button>
             </div>
 
             {viewingImage && (
