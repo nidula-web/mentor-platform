@@ -30,6 +30,7 @@ export default function CoachProfilePage() {
     const [loading, setLoading] = useState(true)
     const [averageRating, setAverageRating] = useState<number | null>(null)
     const [isOwner, setIsOwner] = useState(false)
+    const [viewerRole, setViewerRole] = useState<string | null>(null)
     const [activeStudents, setActiveStudents] = useState(0)
 
     useEffect(() => {
@@ -55,18 +56,28 @@ export default function CoachProfilePage() {
             return
         }
 
-        // Check ownership
-        if (user && user.id === mentorData.user_id) {
-            setIsOwner(true)
+        // Check ownership & role
+        if (user) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single()
             
-            // Fetch active students if owner
-            const { count } = await supabase
-                .from('subscriptions')
-                .select('*', { count: 'exact', head: true })
-                .eq('mentor_id', mentorId)
-                .eq('status', 'active')
-            
-            setActiveStudents(count || 0)
+            if (profile) setViewerRole(profile.role)
+
+            if (user.id === mentorData.user_id) {
+                setIsOwner(true)
+                
+                // Fetch active students if owner
+                const { count } = await supabase
+                    .from('subscriptions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('mentor_id', mentorId)
+                    .eq('status', 'active')
+                
+                setActiveStudents(count || 0)
+            }
         }
 
         // Handle the joined data format from Supabase
@@ -325,14 +336,26 @@ export default function CoachProfilePage() {
                                     <p className="text-xs font-semibold text-gray-600 mt-1">💰 Rs. {pricing.coachEarns.toLocaleString()} / student</p>
                                 </div>
                             </div>
-                            <Link
-                                href="/mentor/setup"
-                                className="w-full sm:w-auto bg-gray-900 h-[52px] flex items-center justify-center text-white font-black px-10 rounded-2xl transition-all shadow-xl active:scale-95"
-                            >
-                                Edit Profile
-                            </Link>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <Link
+                                    href="/mentor/setup"
+                                    className="flex-1 sm:flex-none sm:w-auto bg-gray-900 h-[52px] flex items-center justify-center text-white font-black px-8 rounded-2xl transition-all shadow-xl active:scale-95"
+                                >
+                                    Edit Profile
+                                </Link>
+                                <button
+                                    onClick={() => {
+                                        const url = `${window.location.origin}/coach/${mentor.id}`
+                                        navigator.clipboard.writeText(url)
+                                        alert('Profile link copied to clipboard!')
+                                    }}
+                                    className="flex-1 sm:flex-none sm:w-auto bg-blue-50 text-blue-600 border border-blue-100 h-[52px] flex items-center justify-center font-black px-8 rounded-2xl transition-all shadow-sm active:scale-95"
+                                >
+                                    Share
+                                </button>
+                            </div>
                         </>
-                    ) : (
+                    ) : viewerRole === 'student' ? (
                         <>
                              <div className="w-full sm:w-auto text-center sm:text-left">
                                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Subscription Plan</p>
@@ -353,6 +376,23 @@ export default function CoachProfilePage() {
                                     Subscribe Now
                                 </Link>
                             )}
+                        </>
+                    ) : viewerRole === 'mentor' ? (
+                        <div className="w-full flex items-center justify-center py-2">
+                            <p className="text-gray-500 font-bold italic text-sm">You are viewing this as a fellow coach (View Only Mode)</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="w-full sm:w-auto text-center sm:text-left">
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Pricing</p>
+                                <p className="text-lg font-black text-gray-400 italic">Sign up to see pricing</p>
+                            </div>
+                            <Link
+                                href="/signup"
+                                className="w-full sm:w-auto h-[52px] bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white font-black px-10 rounded-2xl transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+                            >
+                                Get Started
+                            </Link>
                         </>
                     )}
                 </div>

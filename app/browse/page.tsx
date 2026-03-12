@@ -73,6 +73,7 @@ export default function BrowsePage() {
   const [filteredMentors, setFilteredMentors] = useState<MentorWithProfile[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [viewerRole, setViewerRole] = useState<string | null>(null);
 
   const subjectOptions = getSubjectOptions(filterExamType, filterStream);
 
@@ -82,18 +83,21 @@ export default function BrowsePage() {
 
       // Check user role
       const { data: { user } }: any = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile }: any = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        
-        if (profile?.role === "mentor") {
-          window.location.href = "/mentor/dashboard";
-          return;
+        if (user) {
+          const { data: profile }: any = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          
+          if (profile) {
+            setViewerRole(profile.role);
+            if (profile.role === "mentor") {
+              router.push("/mentor/dashboard");
+              return;
+            }
+          }
         }
-      }
 
       const { data: mentorsData, error } = await supabase
         .from("mentors")
@@ -445,10 +449,14 @@ export default function BrowsePage() {
                       <div className="mt-8">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-bold text-gray-400 uppercase tracking-tighter">Subscription</p>
-                          <p className="text-lg font-black text-gray-900">
-                             Rs. {getPricing(mentor.exam_type).studentPays.toLocaleString()}
-                             <span className="text-xs font-medium text-gray-500">/mo</span>
-                          </p>
+                          {viewerRole === 'student' ? (
+                            <p className="text-lg font-black text-gray-900">
+                                Rs. {getPricing(mentor.exam_type).studentPays.toLocaleString()}
+                                <span className="text-xs font-medium text-gray-500">/mo</span>
+                            </p>
+                          ) : (
+                            <p className="text-xs font-bold text-gray-400 italic">Sign up to see pricing</p>
+                          )}
                         </div>
                         <div className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-black text-sm shadow-xl shadow-blue-600/20 group-hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center">
                           View Profile

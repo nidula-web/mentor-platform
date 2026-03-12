@@ -195,7 +195,7 @@ export default function Home() {
                     href="/signup"
                     className="flex w-full sm:max-w-xs items-center justify-center rounded-2xl bg-blue-600 px-8 py-5 text-lg sm:text-xl font-black text-white shadow-2xl shadow-blue-600/40 transition-all hover:bg-blue-700 hover:-translate-y-1 active:scale-95 text-center"
                   >
-                    Find Your Coach
+                    Find Your Exam Coach
                   </Link>
                   <Link
                     href="/signup?role=mentor"
@@ -212,14 +212,6 @@ export default function Home() {
                   >
                     Go to Dashboard
                   </Link>
-                  {mentorId && (
-                    <Link
-                      href={`/coach/${mentorId}`}
-                      className="flex w-full sm:max-w-xs items-center justify-center rounded-2xl bg-slate-900 px-8 py-5 text-lg sm:text-xl font-black text-white transition-all hover:bg-black hover:-translate-y-1 active:scale-95 text-center"
-                    >
-                      View Your Profile
-                    </Link>
-                  )}
                 </>
               ) : (
                 <>
@@ -315,50 +307,51 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">Meet Our Top Coaches</h2>
               <p className="text-gray-500 font-medium max-w-md mx-auto md:mx-0 italic text-sm sm:text-base leading-relaxed">Learn from students who have already mastered the target you are aiming for.</p>
             </div>
-            <Link href="/browse" className="text-blue-600 font-black flex items-center justify-center md:justify-start gap-2 hover:gap-4 transition-all uppercase text-xs sm:text-sm tracking-widest touch-target">
-              View All Coaches <span>→</span>
-            </Link>
+            {role !== "mentor" && (
+                <Link href="/browse" className="text-blue-600 font-black flex items-center justify-center md:justify-start gap-2 hover:gap-4 transition-all uppercase text-xs sm:text-sm tracking-widest touch-target">
+                View All Coaches <span>→</span>
+                </Link>
+            )}
           </div>
 
           <div className="flex overflow-x-auto pb-4 gap-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3">
             {featuredCoaches.map((coach) => (
-              <div key={coach.id} className="min-w-[280px] sm:min-w-0 bg-white p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] shadow-xl shadow-gray-200/50 border border-white hover:border-blue-500/20 transition-all group overflow-hidden relative">
+              <div key={coach.id} className="min-w-[280px] sm:min-w-0 bg-white p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] shadow-xl shadow-gray-200/50 border border-white hover:border-blue-500/20 transition-all group overflow-hidden relative text-center">
                 <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-500/5 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16 group-hover:scale-150 transition-transform duration-700" />
                 
-                <div className="relative z-10">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-4 ring-blue-50">
-                      {coach.profile_picture ? (
-                        <img src={coach.profile_picture} alt={coach.full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-black text-lg sm:text-xl">
-                          {coach.full_name[0]}
-                        </div>
-                      )}
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-4 ring-blue-50 mb-4 mx-auto">
+                    {coach.profile_picture ? (
+                    <img src={coach.profile_picture} alt={coach.full_name} className="w-full h-full object-cover" />
+                    ) : (
+                    <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-black text-xl sm:text-2xl">
+                        {coach.full_name[0]}
                     </div>
-                    <div>
-                      <h3 className="font-black text-gray-900 text-sm sm:text-base">{coach.full_name}</h3>
-                      <p className="text-[10px] sm:text-xs text-yellow-500 font-bold">⭐ {coach.average_rating.toFixed(1)} Rating</p>
+                    )}
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h3 className="font-black text-gray-900 text-lg sm:text-xl">{coach.full_name}</h3>
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                        <span className="text-xs sm:text-sm text-yellow-500 font-bold">⭐ {coach.average_rating.toFixed(1)}</span>
+                        <span className="inline-flex shrink-0 items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-800">✓ Verified</span>
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <span className="text-base sm:text-lg">{coach.exam_type === 'AL' ? '🎓' : '🏆'}</span>
+                  <p className="text-sm font-bold text-slate-800 mb-6 flex items-center justify-center gap-2">
+                    <span className="text-lg">{coach.exam_type === 'AL' ? '🎓' : '🏆'}</span>
                     {coach.university || "O/L Top Achiever"}
                   </p>
 
-                  <div className="flex flex-wrap gap-2 mb-8">
-                    <span className="text-[9px] sm:text-[10px] font-black uppercase bg-blue-50 text-blue-600 px-2 sm:px-3 py-1 rounded-full border border-blue-100">
+                  <div className="flex flex-wrap justify-center gap-2 mb-8">
+                    <span className="text-[10px] font-black uppercase bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
                       {coach.subject}
-                    </span>
-                    <span className="text-[9px] sm:text-[10px] font-black uppercase bg-slate-50 text-slate-500 px-2 sm:px-3 py-1 rounded-full border border-slate-100 italic">
-                       Verified Achiever
                     </span>
                   </div>
 
                   <Link 
                     href={user ? `/coach/${coach.id}` : "/signup"}
-                    className="block w-full text-center bg-gray-900 text-white py-3 sm:py-4 rounded-2xl font-black text-xs sm:text-sm group-hover:bg-blue-600 transition-colors shadow-lg active:scale-95 touch-target flex items-center justify-center"
+                    className="block w-full text-center bg-gray-900 text-white py-4 rounded-2xl font-black text-sm group-hover:bg-blue-600 transition-colors shadow-lg active:scale-95 touch-target"
                   >
                     View Profile
                   </Link>
