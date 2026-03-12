@@ -192,7 +192,7 @@ export default function Home() {
             {!user ? (
                 <>
                   <Link
-                    href="/browse"
+                    href="/signup"
                     className="flex w-full sm:max-w-xs items-center justify-center rounded-2xl bg-blue-600 px-8 py-5 text-lg sm:text-xl font-black text-white shadow-2xl shadow-blue-600/40 transition-all hover:bg-blue-700 hover:-translate-y-1 active:scale-95 text-center"
                   >
                     Find Your Coach

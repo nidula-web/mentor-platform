@@ -216,116 +216,133 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Full-screen Mobile Menu Overlay */}
-      <div className={`fixed inset-0 z-[60] bg-white transition-all duration-300 sm:hidden ${
-        isMenuOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
+      {/* Mobile Menu Backdrop */}
+      <div 
+        className={`fixed inset-0 z-[60] bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300 sm:hidden ${
+          isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsMenuOpen(false)}
+      />
+
+      {/* Side Mobile Menu Drawer */}
+      <div className={`fixed right-0 top-0 bottom-0 z-[70] w-72 sm:w-80 bg-white shadow-2xl transition-transform duration-300 ease-out transform sm:hidden ${
+        isMenuOpen ? "translate-x-0" : "translate-x-full"
       }`}>
         <div className="flex flex-col h-full">
-          <div className="flex h-16 items-center justify-between px-4 border-b">
+          <div className="flex h-16 items-center justify-between px-6 border-b border-slate-50">
             <Link href="/" className="text-xl font-bold text-blue-700" onClick={() => setIsMenuOpen(false)}>
               ExamCoach
             </Link>
             <button
               onClick={() => setIsMenuOpen(false)}
-              className="p-2 text-gray-900 touch-target"
+              className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-50 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {user && profile && (
-              <div className="mb-8 p-4 bg-blue-50 rounded-2xl">
-                <div className="flex items-center gap-3 mb-4">
-                  {profile.profile_picture ? (
-                    <img src={profile.profile_picture} alt={profile.full_name} className="h-12 w-12 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold">
-                      {profile.full_name?.charAt(0).toUpperCase()}
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
+            {user && profile ? (
+              <div className="mb-8 p-6 bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl shadow-lg shadow-blue-600/20 text-white overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-4 mb-5">
+                    {profile.profile_picture ? (
+                      <img src={profile.profile_picture} alt={profile.full_name} className="h-14 w-14 rounded-full object-cover ring-2 ring-white/20" />
+                    ) : (
+                      <div className="h-14 w-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-xl font-black">
+                        {profile.full_name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-black truncate text-base leading-tight">{profile.full_name}</p>
+                      <p className="text-[10px] text-blue-100 font-bold uppercase tracking-widest opacity-80">{profile.role === 'mentor' ? 'Coach' : 'Student Account'}</p>
                     </div>
-                  )}
-                  <div>
-                    <p className="font-black text-gray-900">{profile.full_name}</p>
-                    <p className="text-xs text-gray-500">{profile.email}</p>
                   </div>
+                  
+                  <Link
+                    href={profile.role === 'mentor' ? "/mentor/dashboard" : "/student/dashboard"}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-white text-blue-700 font-black text-sm rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    📊 Open Dashboard
+                  </Link>
                 </div>
+              </div>
+            ) : (
+              <div className="space-y-3 mb-8">
                 <Link
-                  href={profile.role === 'mentor' ? "/mentor/dashboard" : "/student/dashboard"}
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white font-bold rounded-xl"
+                  href="/signup"
+                  className="flex items-center justify-center w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Go to Dashboard
+                  Join ExamCoach
+                </Link>
+                <Link
+                  href="/login"
+                  className="flex items-center justify-center w-full py-4 text-slate-700 font-black border-2 border-slate-100 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign In
                 </Link>
               </div>
             )}
 
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 mb-2">Main Menu</p>
-            <Link 
-              href="/" 
-              className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              🏠 Home
-            </Link>
-            {(!user || profile?.role === "student") && (
-              <Link 
-                href="/browse" 
-                className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                🔍 Browse Coaches
-              </Link>
-            )}
-            <Link 
-              href="/contact" 
-              className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              ✉️ Contact Support
-            </Link>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-3 mb-3">Main Menu</p>
+              <div className="grid gap-1">
+                <Link 
+                  href="/" 
+                  className="flex items-center gap-4 px-4 py-4 text-base font-bold text-slate-900 hover:bg-blue-50 hover:text-blue-700 rounded-2xl transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <span className="text-xl opacity-60">🏠</span> Home
+                </Link>
+                {(!user || profile?.role === "student") && (
+                  <Link 
+                    href="/browse" 
+                    className="flex items-center gap-4 px-4 py-4 text-base font-bold text-slate-900 hover:bg-blue-50 hover:text-blue-700 rounded-2xl transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="text-xl opacity-60">🔎</span> Find a Coach
+                  </Link>
+                )}
+                <Link 
+                  href="/contact" 
+                  className="flex items-center gap-4 px-4 py-4 text-base font-bold text-slate-900 hover:bg-blue-50 hover:text-blue-700 rounded-2xl transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <span className="text-xl opacity-60">✉️</span> Contact Support
+                </Link>
+              </div>
+            </div>
 
             {user && (
-              <>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 mt-8 mb-2">Account</p>
-                <Link 
-                  href="/profile/settings" 
-                  className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  👤 My Profile
-                </Link>
-                <Link 
-                  href="/notifications" 
-                  className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  🔔 Notifications
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 w-full px-4 py-4 text-lg font-bold text-red-600 hover:bg-red-50 rounded-2xl text-left"
-                >
-                  🚪 Logout
-                </button>
-              </>
-            )}
-
-            {!user && (
-              <div className="pt-8 flex flex-col gap-4">
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center w-full py-4 text-lg font-bold text-gray-900 border-2 rounded-2xl"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="flex items-center justify-center w-full py-4 text-lg font-black text-white bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Sign Up
-                </Link>
+              <div className="pt-8 border-t border-slate-50">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-3 mb-3">Settings</p>
+                <div className="grid gap-1">
+                  <Link 
+                    href="/profile/settings" 
+                    className="flex items-center gap-4 px-4 py-4 text-base font-bold text-slate-900 hover:bg-blue-50 hover:text-blue-700 rounded-2xl transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="text-xl opacity-60">👤</span> Account Settings
+                  </Link>
+                  <Link 
+                    href="/notifications" 
+                    className="flex items-center gap-4 px-4 py-4 text-base font-bold text-slate-900 hover:bg-blue-50 hover:text-blue-700 rounded-2xl transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="text-xl opacity-60">🔔</span> Notifications
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-4 w-full px-4 py-4 text-base font-bold text-red-600 hover:bg-red-50 rounded-2xl transition-colors text-left"
+                  >
+                    <span className="text-xl opacity-60">🚪</span> Sign Out
+                  </button>
+                </div>
               </div>
             )}
           </div>
