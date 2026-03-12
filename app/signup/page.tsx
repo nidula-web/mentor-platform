@@ -116,7 +116,7 @@ function SignUpContent() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[48px] rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-base"
                 placeholder="Enter your full name"
               />
             </div>
@@ -131,7 +131,7 @@ function SignUpContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[48px] rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-base"
                 placeholder="you@example.com"
               />
             </div>
@@ -147,7 +147,7 @@ function SignUpContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[48px] rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-base"
                 placeholder="Min 6 characters"
               />
             </div>
@@ -192,9 +192,10 @@ function SignUpContent() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className={`w-full rounded-lg border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                className={`w-full h-[48px] rounded-lg border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-base ${
                   error && error.includes("phone") ? "border-red-500" : "border-gray-300"
                 }`}
+                placeholder="e.g., 077 123 4567"
               />
             </div>
 
@@ -227,7 +228,7 @@ function SignUpContent() {
             <button
               type="submit"
               disabled={loading || !agreedToTerms}
-              className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+              className="w-full h-[52px] rounded-lg bg-blue-600 font-black text-white transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-60 shadow-lg shadow-blue-600/20 mt-4"
             >
               {loading ? "Creating account…" : "Sign Up"}
             </button>

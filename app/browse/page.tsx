@@ -72,6 +72,7 @@ export default function BrowsePage() {
   const [filterLanguage, setFilterLanguage] = useState<string>("");
   const [filteredMentors, setFilteredMentors] = useState<MentorWithProfile[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const subjectOptions = getSubjectOptions(filterExamType, filterStream);
 
@@ -188,13 +189,39 @@ export default function BrowsePage() {
         </h1>
 
         {/* Filters */}
-        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold text-gray-900">
-            Refine your search
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Mobile Filter Toggle */}
+        <div className="mb-4 lg:hidden">
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 py-3.5 font-bold text-gray-900 shadow-sm active:scale-95 transition-all"
+          >
+            <span>{isFilterOpen ? "✕ Close Filters" : "🔍 Filter Coaches"}</span>
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className={`mb-8 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 transition-all duration-300 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">
+              Refine your search
+            </h2>
+            <button 
+              onClick={() => {
+                setFilterExamType("");
+                setFilterStream("");
+                setFilterSubject("");
+                setFilterLanguage("");
+                setFilteredMentors(mentors);
+              }}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700"
+            >
+              Clear All
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-800">
+              <label className="mb-1.5 block text-xs font-black uppercase tracking-tight text-gray-500">
                 Exam type
               </label>
               <select
@@ -204,9 +231,9 @@ export default function BrowsePage() {
                   setFilterStream("");
                   setFilterSubject("");
                 }}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
               >
-                <option value="">All</option>
+                <option value="">All Exams</option>
                 {EXAM_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
@@ -214,7 +241,7 @@ export default function BrowsePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-800">
+              <label className="mb-1.5 block text-xs font-black uppercase tracking-tight text-gray-500">
                 Stream
               </label>
               <select
@@ -224,9 +251,9 @@ export default function BrowsePage() {
                   setFilterSubject("");
                 }}
                 disabled={filterExamType !== "A/L"}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                className="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 transition-all"
               >
-                <option value="">All</option>
+                <option value="">All Streams</option>
                 {AL_STREAMS.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -234,15 +261,15 @@ export default function BrowsePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-800">
+              <label className="mb-1.5 block text-xs font-black uppercase tracking-tight text-gray-500">
                 Subject
               </label>
               <select
                 value={filterSubject}
                 onChange={(e) => setFilterSubject(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
               >
-                <option value="">All</option>
+                <option value="">All Subjects</option>
                 {subjectOptions.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -250,15 +277,15 @@ export default function BrowsePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-800">
+              <label className="mb-1.5 block text-xs font-black uppercase tracking-tight text-gray-500">
                 Language
               </label>
               <select
                 value={filterLanguage}
                 onChange={(e) => setFilterLanguage(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[48px] rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
               >
-                <option value="">All</option>
+                <option value="">All Languages</option>
                 {LANGUAGES.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
@@ -268,8 +295,11 @@ export default function BrowsePage() {
             <div className="flex items-end">
               <button
                 type="button"
-                onClick={handleSearch}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                onClick={() => {
+                  handleSearch();
+                  setIsFilterOpen(false);
+                }}
+                className="w-full h-[48px] rounded-xl bg-gray-900 px-4 font-black mt-2 text-white hover:bg-black active:scale-95 transition-all shadow-lg"
               >
                 Search
               </button>

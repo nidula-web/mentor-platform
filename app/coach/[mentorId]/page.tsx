@@ -307,48 +307,48 @@ export default function CoachProfilePage() {
             </main>
 
             {/* Sticky bottom CTA / Stats */}
-            <div className="fixed bottom-0 inset-x-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 p-4 z-20">
-                <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            <div className="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-xl border-t border-gray-200 p-4 z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                     {isOwner ? (
                         <>
-                            <div className="flex gap-8">
+                            <div className="flex w-full sm:w-auto justify-between sm:gap-8">
                                 <div>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active Students</p>
-                                    <p className="text-xl font-black text-gray-900">👥 {activeStudents}</p>
+                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Active Students</p>
+                                    <p className="text-xl font-black text-gray-900 leading-none mt-1">👥 {activeStudents}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Monthly Earnings</p>
-                                    <p className="text-xl font-black text-blue-600">Rs. {(activeStudents * pricing.coachEarns).toLocaleString()}</p>
+                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Monthly Earnings</p>
+                                    <p className="text-xl font-black text-blue-600 leading-none mt-1">Rs. {(activeStudents * pricing.coachEarns).toLocaleString()}</p>
                                 </div>
-                                <div className="hidden sm:block">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Revenue Share</p>
-                                    <p className="text-xs font-semibold text-gray-600 mt-1">💰 You earn Rs. {pricing.coachEarns.toLocaleString()} per student</p>
+                                <div className="hidden md:block">
+                                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Revenue Share</p>
+                                    <p className="text-xs font-semibold text-gray-600 mt-1">💰 Rs. {pricing.coachEarns.toLocaleString()} / student</p>
                                 </div>
                             </div>
                             <Link
                                 href="/mentor/setup"
-                                className="bg-gray-800 hover:bg-gray-900 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md active:scale-95"
+                                className="w-full sm:w-auto bg-gray-900 h-[52px] flex items-center justify-center text-white font-black px-10 rounded-2xl transition-all shadow-xl active:scale-95"
                             >
                                 Edit Profile
                             </Link>
                         </>
                     ) : (
                         <>
-                             <div>
-                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Subscription Plan</p>
-                                <p className="text-xl font-black text-gray-900">Rs. {pricing.studentPays.toLocaleString()}<span className="text-sm font-medium text-gray-500">/month</span></p>
+                             <div className="w-full sm:w-auto text-center sm:text-left">
+                                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Subscription Plan</p>
+                                <p className="text-xl font-black text-gray-900">Rs. {pricing.studentPays.toLocaleString()}<span className="text-sm font-medium text-gray-400">/mo</span></p>
                             </div>
                             {mentor.current_student_count >= mentor.max_students ? (
                                 <button 
                                     disabled
-                                    className="bg-gray-200 text-gray-400 font-bold px-8 py-3 rounded-xl cursor-not-allowed shadow-none"
+                                    className="w-full sm:w-auto h-[52px] bg-gray-100 text-gray-400 font-black px-10 rounded-2xl cursor-not-allowed"
                                 >
                                     Fully Booked
                                 </button>
                             ) : (
                                 <Link
                                     href={`/subscribe/${mentor.id}`}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-xl transition-all hover:shadow-lg active:scale-95"
+                                    className="w-full sm:w-auto h-[52px] bg-blue-600 hover:bg-blue-700 flex items-center justify-center text-white font-black px-10 rounded-2xl transition-all shadow-xl shadow-blue-600/20 active:scale-95"
                                 >
                                     Subscribe Now
                                 </Link>

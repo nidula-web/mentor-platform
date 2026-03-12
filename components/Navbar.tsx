@@ -15,6 +15,15 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // Prevent scrolling when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isMenuOpen]);
+
   useEffect(() => {
     const supabase: any = createClient();
 
@@ -91,19 +100,19 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* Notifications - Visible always if logged in */}
+          {user && <NotificationBell />}
+
           {loading ? (
-            <div className="h-8 w-8 animate-pulse rounded bg-gray-200" />
+            <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
           ) : user && profile ? (
             <>
-              {/* Desktop Actions */}
-              <NotificationBell />
-
-              {/* Profile Dropdown */}
-              <div className="relative profile-dropdown-container">
+              {/* Profile Dropdown (Desktop) */}
+              <div className="hidden sm:block relative profile-dropdown-container">
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center gap-2 group p-1 rounded-full hover:bg-gray-50 transition-all"
+                  className="flex items-center gap-2 group p-1 rounded-full hover:bg-gray-50 transition-all touch-target"
                 >
                   {profile.profile_picture ? (
                     <img
@@ -134,37 +143,31 @@ export default function Navbar() {
                     <div className="py-2">
                       <Link
                         href={profile.role === 'mentor' ? "/mentor/dashboard" : "/student/dashboard"}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all"
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         📊 Dashboard
                       </Link>
                       <Link
                         href="/profile/settings"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all"
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         👤 My Profile
                       </Link>
                       <Link
                         href="/notifications"
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all"
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         🔔 Notifications
                       </Link>
-                      <button
-                        disabled
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-300 cursor-not-allowed rounded-xl"
-                      >
-                        ⚙️ Settings
-                      </button>
                     </div>
 
                     <div className="pt-2 border-t border-gray-50">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all"
                       >
                         🚪 Logout
                       </button>
@@ -176,51 +179,158 @@ export default function Navbar() {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 sm:hidden text-gray-500 hover:bg-gray-100 rounded-xl"
+                className="p-2 sm:hidden text-gray-900 hover:bg-gray-100 rounded-xl touch-target flex items-center justify-center"
+                aria-label="Toggle menu"
               >
-                {isMenuOpen ? "✕" : "☰"}
+                {isMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                )}
               </button>
             </>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-50 rounded-xl transition-all"
+                className="px-3 sm:px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-50 rounded-xl transition-all touch-target flex items-center justify-center invisible sm:visible"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-95"
+                className="px-4 py-2 text-sm font-black text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-95 touch-target flex items-center justify-center"
               >
                 Sign Up
               </Link>
+              {/* Mobile Menu Toggle for Guest */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 sm:hidden text-gray-900 hover:bg-gray-100 rounded-xl touch-target flex items-center justify-center"
+                aria-label="Toggle menu"
+              >
+                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
-      {isMenuOpen && (
-        <div className="sm:hidden border-t border-gray-100 bg-white p-4 space-y-2 shadow-2xl animate-in slide-in-from-top-4 duration-300">
-           {(!user || profile?.role === "student") && (
-             <Link 
-              href="/browse" 
-              className="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl"
+      {/* Full-screen Mobile Menu Overlay */}
+      <div className={`fixed inset-0 z-[60] bg-white transition-all duration-300 sm:hidden ${
+        isMenuOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
+      }`}>
+        <div className="flex flex-col h-full">
+          <div className="flex h-16 items-center justify-between px-4 border-b">
+            <Link href="/" className="text-xl font-bold text-blue-700" onClick={() => setIsMenuOpen(false)}>
+              ExamCoach
+            </Link>
+            <button
+              onClick={() => setIsMenuOpen(false)}
+              className="p-2 text-gray-900 touch-target"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {user && profile && (
+              <div className="mb-8 p-4 bg-blue-50 rounded-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  {profile.profile_picture ? (
+                    <img src={profile.profile_picture} alt={profile.full_name} className="h-12 w-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold">
+                      {profile.full_name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-black text-gray-900">{profile.full_name}</p>
+                    <p className="text-xs text-gray-500">{profile.email}</p>
+                  </div>
+                </div>
+                <Link
+                  href={profile.role === 'mentor' ? "/mentor/dashboard" : "/student/dashboard"}
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white font-bold rounded-xl"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Go to Dashboard
+                </Link>
+              </div>
+            )}
+
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 mb-2">Main Menu</p>
+            <Link 
+              href="/" 
+              className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
               onClick={() => setIsMenuOpen(false)}
             >
-              🔍 Browse Coaches
+              🏠 Home
             </Link>
-           )}
-          <Link 
-            href="/contact" 
-            className="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            ✉️ Contact Support
-          </Link>
+            {(!user || profile?.role === "student") && (
+              <Link 
+                href="/browse" 
+                className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                🔍 Browse Coaches
+              </Link>
+            )}
+            <Link 
+              href="/contact" 
+              className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              ✉️ Contact Support
+            </Link>
+
+            {user && (
+              <>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 mt-8 mb-2">Account</p>
+                <Link 
+                  href="/profile/settings" 
+                  className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  👤 My Profile
+                </Link>
+                <Link 
+                  href="/notifications" 
+                  className="flex items-center gap-3 px-4 py-4 text-lg font-bold text-gray-900 hover:bg-gray-50 rounded-2xl"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🔔 Notifications
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 w-full px-4 py-4 text-lg font-bold text-red-600 hover:bg-red-50 rounded-2xl text-left"
+                >
+                  🚪 Logout
+                </button>
+              </>
+            )}
+
+            {!user && (
+              <div className="pt-8 flex flex-col gap-4">
+                <Link
+                  href="/login"
+                  className="flex items-center justify-center w-full py-4 text-lg font-bold text-gray-900 border-2 rounded-2xl"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex items-center justify-center w-full py-4 text-lg font-black text-white bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 }

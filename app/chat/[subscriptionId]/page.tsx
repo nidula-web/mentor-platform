@@ -21,6 +21,9 @@ export default function ChatPage() {
     const [isRecording, setIsRecording] = useState(false)
     const [recordingDuration, setRecordingDuration] = useState(0)
     const [blocked, setBlocked] = useState(false)
+    const [viewingImage, setViewingImage] = useState(null)
+    const [uploading, setUploading] = useState(false)
+    const [recordingUploading, setRecordingUploading] = useState(false)
 
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -216,6 +219,7 @@ export default function ChatPage() {
         const file = e.target.files?.[0]
         if (!file || !currentUserId) return
 
+        setUploading(true)
         const fileName = `${currentUserId}-${Date.now()}-${file.name}`
         const { error } = await supabase.storage
             .from('chat-images')
@@ -223,6 +227,7 @@ export default function ChatPage() {
 
         if (error) {
             alert('Failed to upload image')
+            setUploading(false)
             return
         }
 
@@ -238,6 +243,7 @@ export default function ChatPage() {
             is_read: false
         })
 
+        setUploading(false)
         if (fileInputRef.current) fileInputRef.current.value = ''
     }
 
@@ -253,24 +259,40 @@ export default function ChatPage() {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
                 stream.getTracks().forEach(track => track.stop())
 
+                setRecordingUploading(true)
                 const fileName = `${currentUserId}-${Date.now()}.webm`
-                const { error } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('voice-messages')
-                    .upload(fileName, audioBlob)
+                    .upload(fileName, audioBlob, {
+                        contentType: 'audio/webm',
+                        cacheControl: '3600',
+                    })
 
-                if (error) return
+                if (uploadError) {
+                    console.error('Voice upload error:', uploadError)
+                    alert('Failed to send voice message. Try again.')
+                    setRecordingUploading(false)
+                    return
+                }
 
                 const { data: urlData } = supabase.storage
                     .from('voice-messages')
                     .getPublicUrl(fileName)
 
-                await supabase.from('messages').insert({
+                const { error: msgError } = await supabase.from('messages').insert({
                     subscription_id: subscriptionId,
                     sender_id: currentUserId,
                     voice_url: urlData.publicUrl,
                     message_type: 'voice',
                     is_read: false
                 })
+
+                if (msgError) {
+                    console.error('Voice message insert error:', msgError)
+                    alert('Failed to send voice message')
+                }
+
+                setRecordingUploading(false)
             }
 
             mediaRecorder.start()
@@ -377,20 +399,14 @@ export default function ChatPage() {
                                                 src={msg.image_url} 
                                                 alt="" 
                                                 className="rounded-lg max-w-[250px] max-h-[300px] object-cover cursor-pointer hover:opacity-95 transition-all" 
-                                                onClick={() => window.open(msg.image_url, '_blank')}
+                                                onClick={() => setViewingImage(msg.image_url)}
                                             />
                                         </div>
                                     )}
 
                                     {msg.message_type === 'voice' && (
-                                        <div className="flex items-center gap-2 py-2 pr-10 min-w-[200px]">
-                                            <button className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-blue-500">
-                                                ▶
-                                            </button>
-                                            <div className="flex-1 h-1 bg-slate-200 rounded-full relative overflow-hidden">
-                                                <div className="absolute inset-y-0 left-0 bg-blue-400 w-1/3"></div>
-                                            </div>
-                                            <audio className="hidden">
+                                        <div className="py-2 pr-10">
+                                            <audio controls className="max-w-[200px] h-10">
                                                 <source src={msg.voice_url} type="audio/webm" />
                                             </audio>
                                         </div>
@@ -412,6 +428,28 @@ export default function ChatPage() {
                     })
                 )}
                 <div ref={messagesEndRef} />
+                
+                {uploading && (
+                    <div className="flex justify-end">
+                        <div className="bg-blue-100 rounded-2xl p-3 max-w-[75%]">
+                            <div className="flex items-center gap-2">
+                                <div className="animate-spin text-xl">⏳</div>
+                                <span className="text-sm text-gray-600">Sending image...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {recordingUploading && (
+                    <div className="flex justify-end">
+                        <div className="bg-blue-100 rounded-2xl p-3">
+                            <div className="flex items-center gap-2">
+                                <div className="animate-spin text-xl">⏳</div>
+                                <span className="text-sm text-gray-600">Sending voice message...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Safety Warning */}
@@ -440,7 +478,8 @@ export default function ChatPage() {
                     <div className="flex items-center gap-2 max-w-full">
                         <button 
                             onClick={() => fileInputRef.current?.click()} 
-                            className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-500 rounded-full hover:bg-slate-100 active:scale-90 transition-all border border-slate-100"
+                            disabled={uploading}
+                            className={`w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-500 rounded-full hover:bg-slate-100 active:scale-90 transition-all border border-slate-100 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <span className="text-xl">📎</span>
                         </button>
@@ -484,6 +523,26 @@ export default function ChatPage() {
                     </div>
                 )}
             </div>
+
+            {viewingImage && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-90 z-[100] flex items-center justify-center"
+                    onClick={() => setViewingImage(null)}
+                >
+                    <button 
+                        className="absolute top-4 right-4 text-white text-3xl z-[110]"
+                        onClick={() => setViewingImage(null)}
+                    >
+                        ✕
+                    </button>
+                    <img 
+                        src={viewingImage} 
+                        alt="Full view"
+                        className="max-w-full max-h-full object-contain p-4"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
             <style jsx global>{`
                 body {

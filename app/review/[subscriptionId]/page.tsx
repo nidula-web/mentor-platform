@@ -154,7 +154,7 @@ export default function ReviewPage() {
                             onClick={() => setRating(star)}
                             onMouseEnter={() => setHoverRating(star)}
                             onMouseLeave={() => setHoverRating(0)}
-                            className={`text-4xl transition-transform hover:scale-110 ${
+                            className={`text-5xl transition-transform hover:scale-110 active:scale-95 px-1 ${
                                 star <= (hoverRating || rating) ? 'text-yellow-500' : 'text-gray-400'
                             }`}
                         >
@@ -177,7 +177,7 @@ export default function ReviewPage() {
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Tell us about your experience... How did your coach help you?"
                     rows={4}
-                    className="w-full border rounded-lg p-3 mb-6 focus:outline-none focus:border-blue-500 resize-none"
+                    className="w-full border-2 border-gray-100 rounded-xl p-4 mb-6 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50 transition-all resize-none text-base"
                 />
 
                 {/* Submit */}
@@ -185,10 +185,10 @@ export default function ReviewPage() {
                     onClick={submitReview}
                     disabled={submitting || rating === 0}
                     className={
-                        'w-full py-3 rounded-lg text-white font-bold ' +
+                        'w-full h-[52px] rounded-xl text-white font-black shadow-lg transition-all active:scale-95 ' +
                         (submitting || rating === 0
-                            ? 'bg-gray-300 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700')
+                            ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                            : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20')
                     }
                 >
                     {submitting ? 'Submitting...' : 'Submit Review'}

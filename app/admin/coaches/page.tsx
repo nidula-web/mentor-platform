@@ -112,7 +112,7 @@ export default function AdminCoachesPage() {
                 ) : (
                     <div className="space-y-8">
                         {pendingCoaches.map((coach) => (
-                            <div key={coach.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div key={coach.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
                                 <div className="p-8">
                                     <div className="grid lg:grid-cols-3 gap-8">
                                         {/* Basic Info */}

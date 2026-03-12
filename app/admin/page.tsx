@@ -55,7 +55,7 @@ export default function AdminPage() {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (password === 'admin123') { // Simple hardcoded password as requested
+    if (password === 'Nuwanakaadmin444#') { // Simple hardcoded password as requested
       setShowDashboard(true)
       loadDashboardData()
     } else {
@@ -301,7 +301,7 @@ export default function AdminPage() {
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{subscriptions.length} Items</span>
           </div>
 
-          <div className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-slate-900 border-b border-slate-800 italic text-[10px] uppercase tracking-widest text-slate-400">
                 <tr>

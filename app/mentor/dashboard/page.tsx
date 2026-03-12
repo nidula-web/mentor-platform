@@ -384,16 +384,16 @@ export default function MentorDashboardPage() {
                 </div>
                 <button 
                     onClick={() => copyToClipboard(`https://${shareUrl}`, 'link')}
-                    className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-all active:scale-95"
+                    className="flex h-[44px] items-center gap-2 bg-white border border-gray-200 px-5 rounded-xl text-sm font-black text-gray-700 shadow-sm hover:bg-gray-50 transition-all active:scale-95"
                 >
                     {copiedLink ? (
                         <>
-                            <span className="text-green-500">✅</span>
+                            <span className="text-green-500 text-base">✓</span>
                             <span>Copied!</span>
                         </>
                     ) : (
                         <>
-                            <span>🔗</span>
+                            <span className="text-base">🔗</span>
                             <span>Copy Link</span>
                         </>
                     )}
@@ -419,23 +419,23 @@ export default function MentorDashboardPage() {
                         <div className="flex flex-wrap items-center gap-3">
                             <button 
                                 onClick={shareWhatsApp}
-                                className="flex grow items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-black text-white shadow-lg shadow-green-500/20 transition-all hover:bg-[#20bd5a] active:scale-95 sm:grow-0"
+                                className="flex grow h-[48px] items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 text-sm font-black text-white shadow-lg shadow-green-500/20 transition-all hover:bg-[#20bd5a] active:scale-95 sm:grow-0"
                             >
                                 <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.062c-3.414 0-6.194 2.78-6.194 6.194 0 1.258.375 2.454 1.05 3.473L6 18.75l3.14-.82a6.126 6.126 0 002.891.725h.002c3.413 0 6.193-2.78 6.193-6.194 0-3.413-2.78-6.193-6.193-6.193zm3.763 8.751c-.156.438-.769.805-1.056.852-.287.046-.644.073-1.051-.059-.251-.082-.576-.192-1.025-.386-1.912-.828-3.144-2.776-3.239-2.903-.095-.127-.775-.989-.775-1.902 0-.913.483-1.36.654-1.551.171-.191.373-.238.497-.238.125 0 .25.002.359.006.113.003.262-.043.41.312.152.363.52 1.272.565 1.363.045.09.075.195.015.312-.06.117-.091.19-.181.294-.09.105-.189.233-.27.312-.09.088-.184.184-.079.363.105.18.467.77.994 1.242.678.608 1.248.796 1.428.886.18.09.285.075.39-.045.105-.121.45-.525.57-.705.12-.18.24-.151.405-.09.165.061 1.037.489 1.217.579.18.09.3.136.345.211.045.075.045.438-.111.876z"/></svg>
                                 <span>WhatsApp</span>
                             </button>
                             <button 
                                 onClick={shareFacebook}
-                                className="flex grow items-center justify-center gap-2 rounded-xl bg-[#1877F2] px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-[#166fe5] active:scale-95 sm:grow-0"
+                                className="flex grow h-[48px] items-center justify-center gap-2 rounded-xl bg-[#1877F2] px-5 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-[#166fe5] active:scale-95 sm:grow-0"
                             >
                                 <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.791-4.667 4.53-4.667 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                                 <span>Facebook</span>
                             </button>
                             <button 
                                 onClick={() => copyToClipboard(`🎓 I'm coaching O/L/A/L students on ExamCoach! Check my profile 👆 https://${shareUrl} Link in bio`, 'insta')}
-                                className="flex grow items-center justify-center gap-2 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] px-5 py-3 text-sm font-black text-white shadow-xl shadow-pink-500/10 transition-all active:scale-95 sm:grow-0"
+                                className="flex grow h-[48px] items-center justify-center gap-2 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] px-5 text-sm font-black text-white shadow-xl shadow-pink-500/10 transition-all active:scale-95 sm:grow-0"
                             >
-                                <span>📸</span>
+                                <span className="text-base">📸</span>
                                 <span>{copiedInsta ? "Copied!" : "For Instagram"}</span>
                             </button>
                         </div>

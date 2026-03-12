@@ -22,5 +22,27 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Ensure no horizontal scroll from any element */
+* {
+  box-sizing: border-box;
+}
+
+/* Common Mobile Helpers */
+.mobile-px {
+  @apply px-4 sm:px-6 md:px-8;
+}
+
+.touch-target {
+  @apply min-h-[48px] min-w-[48px];
 }

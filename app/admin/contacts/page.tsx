@@ -71,12 +71,12 @@ export default function AdminContactsPage() {
                         <h1 className="text-3xl font-bold text-gray-900 mt-2">Contact Messages</h1>
                     </div>
                     
-                    <div className="flex bg-white rounded-xl shadow-sm border border-gray-100 p-1">
+                    <div className="flex flex-wrap bg-white rounded-xl shadow-sm border border-gray-100 p-1 gap-1">
                         {['All', 'New', 'Read', 'Resolved'].map((f) => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                                className={`flex-1 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
                                     filter === f ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
                                 }`}
                             >
@@ -92,7 +92,7 @@ export default function AdminContactsPage() {
                         <p className="text-gray-500">Loading messages...</p>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 border-b border-gray-100 italic text-xs uppercase tracking-wider text-gray-500">
                                 <tr>

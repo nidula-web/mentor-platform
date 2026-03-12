@@ -67,7 +67,7 @@ export default function AdminChatsPage() {
 
     const handlePasswordSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (password === 'admin123') {
+        if (password === 'Nuwanakaadmin444#') {
             setShowDashboard(true)
             loadChats()
         } else {

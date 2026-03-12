@@ -258,14 +258,14 @@ export default function StudentDashboardPage() {
                     <div className="mt-6 flex flex-wrap gap-3">
                       <Link
                         href={`/chat/${sub.id}`}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        className="flex-1 sm:flex-none h-[44px] flex items-center justify-center rounded-lg bg-blue-600 px-6 py-2 text-sm font-black text-white hover:bg-blue-700 active:scale-95 transition-all"
                       >
                         Open Chat
                       </Link>
                       {!sub.has_review && (
                         <Link
                           href={`/review/${sub.id}`}
-                          className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+                          className="flex-1 sm:flex-none h-[44px] flex items-center justify-center rounded-lg bg-gray-800 px-6 py-2 text-sm font-black text-white hover:bg-gray-900 active:scale-95 transition-all"
                         >
                           Leave Review
                         </Link>
@@ -321,7 +321,7 @@ export default function StudentDashboardPage() {
                       {sub.status === "expired" && (
                         <Link
                           href={`/subscribe/${sub.mentor_id}`}
-                          className="flex-1 sm:flex-none text-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                          className="flex-1 sm:flex-none h-[40px] flex items-center justify-center text-center rounded-lg bg-blue-600 px-6 py-2 text-sm font-black text-white hover:bg-blue-700 active:scale-95 transition-all"
                         >
                           Renew
                         </Link>
@@ -329,7 +329,7 @@ export default function StudentDashboardPage() {
                       {!sub.has_review && (
                         <Link
                           href={`/review/${sub.id}`}
-                          className="flex-1 sm:flex-none text-center rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+                          className="flex-1 sm:flex-none h-[40px] flex items-center justify-center text-center rounded-lg bg-gray-800 px-6 py-2 text-sm font-black text-white hover:bg-gray-900 active:scale-95 transition-all"
                         >
                           Review
                         </Link>
