@@ -4,6 +4,91 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams, useRouter } from 'next/navigation'
 
+function VoicePlayer({ msgId, url, isMe }) {
+  const audioRef = useRef(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
+
+  function togglePlay() {
+    const audio = audioRef.current
+    if (!audio) return
+    
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    } else {
+      audio.play()
+      setIsPlaying(true)
+    }
+  }
+
+  function handleTimeUpdate() {
+    const audio = audioRef.current
+    if (!audio) return
+    const percent = (audio.currentTime / audio.duration) * 100
+    setProgress(percent)
+  }
+
+  function handleLoadedMetadata() {
+    const audio = audioRef.current
+    if (!audio) return
+    setDuration(Math.floor(audio.duration))
+  }
+
+  function handleEnded() {
+    setIsPlaying(false)
+    setProgress(0)
+  }
+
+  function formatDuration(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00'
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return mins + ':' + (secs < 10 ? '0' : '') + secs
+  }
+
+  return (
+    <div className="flex items-center gap-3 min-w-[200px] py-1">
+      <button
+        onClick={togglePlay}
+        className={'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ' +
+          (isMe 
+            ? 'bg-blue-400 text-white hover:bg-blue-300' 
+            : 'bg-gray-300 text-gray-700 hover:bg-gray-400')}
+      >
+        {isPlaying ? '⏸' : '▶'}
+      </button>
+      
+      <div className="flex-1 flex flex-col gap-1">
+        <div className={'h-1.5 rounded-full overflow-hidden ' + 
+          (isMe ? 'bg-blue-300' : 'bg-gray-300')}>
+          <div 
+            className={'h-full rounded-full transition-all duration-100 ' + 
+              (isMe ? 'bg-white' : 'bg-blue-500')}
+            style={{ width: progress + '%' }}
+          />
+        </div>
+        <span className={'text-xs ' + (isMe ? 'text-blue-100' : 'text-gray-400')}>
+          {formatDuration(duration)}
+        </span>
+      </div>
+      
+      <span className="text-lg">🎤</span>
+      
+      <audio
+        ref={audioRef}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        preload="metadata"
+      >
+        <source src={url} type="audio/webm" />
+      </audio>
+    </div>
+  )
+}
+
 export default function ChatPage() {
     const params = useParams()
     const router = useRouter()
@@ -153,7 +238,6 @@ export default function ChatPage() {
                 .order('created_at', { ascending: true })
             
             if (msgs) {
-                console.log('Messages:', msgs)
                 setMessages(msgs)
             }
 
@@ -322,16 +406,16 @@ export default function ChatPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="h-screen flex items-center justify-center bg-gray-100">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col h-screen bg-[#e5ddd5] overflow-hidden">
-            {/* WhatsApp Header */}
-            <div className="fixed top-0 left-0 right-0 h-[60px] bg-white shadow-sm flex items-center px-2 py-3 z-50 transition-all">
+        <div className="h-screen flex flex-col bg-[#e5ddd5]">
+            {/* Header - Fixed */}
+            <div className="h-16 flex-shrink-0 bg-white shadow-sm flex items-center px-2 py-3 z-50">
                 <button onClick={() => router.back()} className="p-2 text-slate-600 hover:bg-slate-100 rounded-full active:scale-90 transition-all">
                     <span className="text-xl">←</span>
                 </button>
@@ -373,12 +457,12 @@ export default function ChatPage() {
                 </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-3 pt-[70px] pb-[80px] space-y-2 scroll-smooth">
+            {/* Messages Area - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scroll-smooth">
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-60">
                         <span className="text-6xl mb-4">👋</span>
-                        <p className="font-medium">Say hello to your {otherUserName}!</p>
+                        <p className="font-medium text-center px-4">Say hello to your {otherUserName}!</p>
                     </div>
                 ) : (
                     messages.map((msg) => {
@@ -408,41 +492,11 @@ export default function ChatPage() {
                                     )}
 
                                     {msg.message_type === 'voice' && msg.voice_url && (
-                                        <div className="flex items-center gap-3 min-w-[200px] py-1">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    const audio = document.getElementById('audio-' + msg.id) as HTMLAudioElement
-                                                    if (audio) {
-                                                        if (audio.paused) {
-                                                            audio.play()
-                                                        } else {
-                                                            audio.pause()
-                                                        }
-                                                    }
-                                                }}
-                                                className={'w-10 h-10 rounded-full flex items-center justify-center text-lg ' + 
-                                                    (isMe ? 'bg-blue-400 text-white' : 'bg-gray-300 text-gray-700')}
-                                            >
-                                                ▶
-                                            </button>
-                                            <div className="flex-1">
-                                                <div className={'h-1 rounded-full ' + (isMe ? 'bg-blue-300' : 'bg-gray-300')}>
-                                                    <div className={'h-1 rounded-full ' + (isMe ? 'bg-white' : 'bg-blue-500')} 
-                                                        style={{width: '0%'}}></div>
-                                                </div>
-                                            </div>
-                                            <span className={'text-xs ' + (isMe ? 'text-blue-100' : 'text-gray-400')}>
-                                                🎤
-                                            </span>
-                                            <audio id={'audio-' + msg.id} className="hidden">
-                                                <source src={msg.voice_url} type="audio/webm" />
-                                            </audio>
-                                        </div>
+                                        <VoicePlayer msgId={msg.id} url={msg.voice_url} isMe={isMe} />
                                     )}
 
                                     <div className="absolute bottom-1 right-2 flex items-center gap-1">
-                                        <span className="text-[10px] text-slate-500 font-medium">
+                                        <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
                                             {formatTime(msg.created_at)}
                                         </span>
                                         {isMe && (
@@ -456,7 +510,7 @@ export default function ChatPage() {
                         )
                     })
                 )}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="h-px" />
                 
                 {uploading && (
                     <div className="flex justify-end">
@@ -490,8 +544,8 @@ export default function ChatPage() {
                 </div>
             )}
 
-            {/* Input Area */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-2 z-50">
+            {/* Input Area - Fixed */}
+            <div className="flex-shrink-0 bg-white border-t border-slate-100 p-2 z-50">
                 {isRecording ? (
                     <div className="flex items-center w-full bg-red-50 rounded-full px-4 py-2 transition-all duration-300 gap-3 border border-red-100">
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
