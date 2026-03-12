@@ -284,10 +284,10 @@ export default function SubscribePage() {
                 </div>
               </div>
 
-              <div className="rounded-xl bg-white p-5 border border-gray-200 shadow-sm hover:border-yellow-400 hover:shadow-md transition-all">
-                <p className="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-4 border-b pb-2">Option 2: Hatton National Bank</p>
+              <div className="rounded-xl bg-white p-5 border border-gray-200 shadow-sm hover:border-blue-400 hover:shadow-md transition-all">
+                <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-4 border-b pb-2">Option 2: Hatton National Bank</p>
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-yellow-400 text-gray-900 flex items-center justify-center font-black text-xl shadow-inner border border-yellow-500">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white text-blue-800 flex items-center justify-center font-black text-xl shadow-sm border-2 border-blue-800">
                     HNB
                   </div>
                   <div className="font-mono text-sm text-gray-800 space-y-1">
