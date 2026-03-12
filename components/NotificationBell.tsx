@@ -1,6 +1,6 @@
 'use client'
 // @ts-nocheck
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -20,6 +20,7 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [showDropdown, setShowDropdown] = useState(false)
     const [userId, setUserId] = useState<string | null>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null)
 
     const unreadCount = notifications.filter(n => !n.is_read).length
 
@@ -32,7 +33,6 @@ export default function NotificationBell() {
         if (!user) return
         setUserId(user.id)
 
-        // Load notifications
         const { data } = await supabase
             .from('notifications')
             .select('*')
@@ -42,7 +42,6 @@ export default function NotificationBell() {
 
         if (data) setNotifications(data)
 
-        // Listen for new notifications
         const channel = supabase
             .channel('notifications-' + user.id)
             .on(
@@ -97,6 +96,19 @@ export default function NotificationBell() {
         }
     }
 
+    // Handle outside click to close dropdown
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false)
+            }
+        }
+        if (showDropdown) {
+          document.addEventListener('mousedown', handleClickOutside)
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [showDropdown])
+
     function formatTime(dateString: string) {
         const date = new Date(dateString)
         const now = new Date()
@@ -122,42 +134,45 @@ export default function NotificationBell() {
     }
 
     return (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
             {/* Bell Button */}
             <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="relative p-2 text-2xl hover:bg-gray-100 rounded-full"
+                className="relative p-2 h-10 w-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Notifications"
             >
-                🔔
+                <span className="text-xl sm:text-2xl">🔔</span>
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold ring-2 ring-white">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
-            {/* Dropdown */}
+            {/* Notification Dropdown */}
             {showDropdown && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                <div 
+                    className="fixed top-14 left-0 right-0 w-full bg-white border-b shadow-2xl md:absolute md:top-full md:mt-2 md:right-0 md:w-80 md:left-auto md:rounded-2xl md:border md:shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 z-50"
+                >
                     {/* Header */}
-                    <div className="flex justify-between items-center p-3 border-b">
-                        <h3 className="font-bold text-gray-900">Notifications</h3>
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h3 className="font-black text-gray-900 text-sm italic">Notifications</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllAsRead}
-                                className="text-sm text-blue-600 hover:text-blue-800"
+                                className="text-xs font-bold text-blue-600 hover:text-blue-800 uppercase tracking-tight"
                             >
-                                Mark all read
+                                Mark all as read
                             </button>
                         )}
                     </div>
 
                     {/* Notifications List */}
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-[70vh] overflow-y-auto">
                         {notifications.length === 0 ? (
-                            <div className="p-6 text-center text-gray-400">
-                                <p className="text-3xl mb-2">🔕</p>
-                                <p>No notifications yet</p>
+                            <div className="p-10 text-center text-gray-400">
+                                <p className="text-4xl mb-3">🔕</p>
+                                <p className="text-xs font-bold uppercase tracking-widest">No notifications yet</p>
                             </div>
                         ) : (
                             notifications.map((notif) => (
@@ -165,29 +180,29 @@ export default function NotificationBell() {
                                     key={notif.id}
                                     onClick={() => handleClick(notif)}
                                     className={
-                                        'p-3 border-b cursor-pointer hover:bg-gray-50 ' +
-                                        (!notif.is_read ? 'bg-blue-50' : '')
+                                        'px-4 py-4 min-h-[56px] border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors flex gap-4 ' +
+                                        (!notif.is_read ? 'bg-blue-50/50' : '')
                                     }
                                 >
-                                    <div className="flex gap-3">
-                                        <span className="text-xl">{getIcon(notif.type)}</span>
-                                        <div className="flex-1">
+                                    <span className="text-2xl shrink-0">{getIcon(notif.type)}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start gap-2">
                                             <p className={
-                                                'text-sm ' +
-                                                (!notif.is_read ? 'font-bold text-gray-900' : 'text-gray-700')
+                                                'text-sm leading-tight ' +
+                                                (!notif.is_read ? 'font-black text-gray-900' : 'text-gray-700 font-medium')
                                             }>
                                                 {notif.title}
                                             </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {notif.message}
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                {formatTime(notif.created_at)}
-                                            </p>
+                                            {!notif.is_read && (
+                                                <span className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-1"></span>
+                                            )}
                                         </div>
-                                        {!notif.is_read && (
-                                            <span className="w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
-                                        )}
+                                        <p className="text-[13px] text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+                                            {notif.message}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-wider">
+                                            {formatTime(notif.created_at)}
+                                        </p>
                                     </div>
                                 </div>
                             ))
