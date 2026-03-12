@@ -273,6 +273,7 @@ export default function SubscribePage() {
                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">Option 1: Sampath Bank</p>
                 <div className="font-mono text-sm text-gray-800 space-y-1">
                   <p><span className="text-gray-400">Bank:</span> Sampath Bank PLC</p>
+                  <p><span className="text-gray-400">Branch:</span> Kuliyapitiya</p>
                   <p><span className="text-gray-400">Account:</span> 102352939821</p>
                   <p><span className="text-gray-400">Name:</span> PANN PINIDIYA ARACHCHI</p>
                 </div>
@@ -282,6 +283,7 @@ export default function SubscribePage() {
                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">Option 2: Hatton National Bank (HNB)</p>
                 <div className="font-mono text-sm text-gray-800 space-y-1">
                   <p><span className="text-gray-400">Bank:</span> Hatton National Bank</p>
+                  <p><span className="text-gray-400">Branch:</span> Kuliyapitiya</p>
                   <p><span className="text-gray-400">Account:</span> 074020299025</p>
                   <p><span className="text-gray-400">Name:</span> PANN PINIDIYA ARACHCHI</p>
                 </div>
