@@ -5,16 +5,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 
-type FeaturedCoach = {
-  id: string;
-  user_id: string;
-  full_name: string;
-  profile_picture: string | null;
-  university: string;
-  exam_type: string;
-  average_rating: number;
-  subject: string;
-};
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -22,16 +12,6 @@ export default function Home() {
   const [mentorId, setMentorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Stats State
-  const [stats, setStats] = useState({
-    coaches: 0,
-    students: 0,
-    messages: 0,
-    rating: 0
-  });
-
-  // Featured Coaches
-  const [featuredCoaches, setFeaturedCoaches] = useState<FeaturedCoach[]>([]);
 
   // FAQ State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -61,64 +41,6 @@ export default function Home() {
             if (mentor) setMentorId(mentor.id);
           }
         }
-      }
-
-      // 2. Fetch Stats
-      const [
-        { count: coachesCount },
-        { count: studentsCount },
-        { count: msgsCount },
-        { data: reviewsData }
-      ] = await Promise.all([
-        supabase.from("mentors").select("*", { count: "exact", head: true }).eq("is_verified", true),
-        supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "student"),
-        supabase.from("messages").select("*", { count: "exact", head: true }),
-        supabase.from("reviews").select("rating")
-      ]);
-
-      const avgRating = reviewsData && reviewsData.length > 0 
-        ? reviewsData.reduce((acc: number, r: any) => acc + r.rating, 0) / reviewsData.length 
-        : 4.9;
-
-      setStats({
-        coaches: coachesCount || 0,
-        students: studentsCount || 0,
-        messages: msgsCount || 0,
-        rating: Number(avgRating.toFixed(1))
-      });
-
-      // 3. Fetch Featured Coaches
-      const { data: topMentors }: any = await supabase
-        .from("mentors")
-        .select(`
-          id,
-          user_id,
-          university,
-          exam_type,
-          subjects,
-          profiles:user_id(full_name, profile_picture)
-        `)
-        .eq("is_verified", true)
-        .limit(10); // Get a few to calculate top ratings
-
-      if (topMentors) {
-        const coachesWithRatings = await Promise.all(topMentors.map(async (m: any) => {
-          const { data: reviews }: any = await supabase.from("reviews").select("rating").eq("mentor_id", m.id);
-          const avg = reviews && reviews.length > 0 
-            ? reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviews.length 
-            : 5.0;
-          return {
-            id: m.id,
-            user_id: m.user_id,
-            full_name: m.profiles?.full_name || "Coach",
-            profile_picture: m.profiles?.profile_picture,
-            university: m.university,
-            exam_type: m.exam_type,
-            average_rating: avg,
-            subject: m.subjects?.[0] || m.exam_type
-          };
-        }));
-        setFeaturedCoaches(coachesWithRatings.sort((a,b) => b.average_rating - a.average_rating).slice(0, 3));
       }
 
       setLoading(false);
@@ -267,24 +189,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SECTION 3: Live Stats */}
-      <section className="py-20 bg-slate-950 text-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_50%_50%,_#3b82f6_0%,_transparent_50%)]" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 relative z-10">
-          {[
-            { label: "Verified Coaches", value: Math.max(stats.coaches, 5) + "+", icon: "💎" },
-            { label: "Students Coached", value: Math.max(stats.students, 10) + "+", icon: "🎓" },
-            { label: "Messages Exchanged", value: Math.max(stats.messages, 100) + "+", icon: "💬" },
-            { label: "Average Rating", value: stats.rating || "4.9", icon: "⭐" }
-          ].map((s, i) => (
-            <div key={i} className="text-center">
-              <span className="text-3xl sm:text-4xl block mb-2 sm:mb-4">{s.icon}</span>
-              <div className="text-3xl sm:text-5xl font-black text-blue-400 mb-1 sm:mb-2">{s.value}</div>
-              <p className="text-slate-500 font-black uppercase text-[8px] sm:text-[10px] tracking-widest leading-tight">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* SECTION 4: Trust Badges */}
       <section className="py-12 bg-white flex justify-center overflow-x-auto whitespace-nowrap scrollbar-hide">
@@ -307,105 +211,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SECTION 5: Featured Coaches */}
+      {/* SECTION 5: Coming Soon Teaser */}
       <section className="py-24 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16 gap-6 text-center md:text-left">
-            <div>
-              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">Meet Our Top Coaches</h2>
-              <p className="text-gray-500 font-medium max-w-md mx-auto md:mx-0 italic text-sm sm:text-base leading-relaxed">Learn from students who have already mastered the target you are aiming for.</p>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">We're Selecting Our First Coaches 🎓</h2>
+          <p className="text-gray-500 font-medium text-lg leading-relaxed mb-12">
+            Our team is carefully verifying top A/L and O/L achievers from leading universities across Sri Lanka.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-3 mb-16">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 font-black text-gray-800 text-lg flex items-center justify-center gap-3">
+              <span className="text-2xl">🎓</span> University of Moratuwa
             </div>
-            {role !== "mentor" && (
-                <Link href="/browse" className="text-blue-600 font-black flex items-center justify-center md:justify-start gap-2 hover:gap-4 transition-all uppercase text-xs sm:text-sm tracking-widest touch-target">
-                View All Coaches <span>→</span>
-                </Link>
-            )}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 font-black text-gray-800 text-lg flex items-center justify-center gap-3">
+              <span className="text-2xl">🏥</span> University of Colombo
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 font-black text-gray-800 text-lg flex items-center justify-center gap-3">
+              <span className="text-2xl">🔬</span> University of Peradeniya
+            </div>
           </div>
 
-          <div className="flex overflow-x-auto pb-4 gap-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3">
-            {featuredCoaches.map((coach) => (
-              <div key={coach.id} className="min-w-[280px] sm:min-w-0 bg-white p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] shadow-xl shadow-gray-200/50 border border-white hover:border-blue-500/20 transition-all group overflow-hidden relative text-center">
-                <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-blue-500/5 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16 group-hover:scale-150 transition-transform duration-700" />
-                
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden ring-4 ring-blue-50 mb-4 mx-auto">
-                    {coach.profile_picture ? (
-                    <img src={coach.profile_picture} alt={coach.full_name} className="w-full h-full object-cover" />
-                    ) : (
-                    <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white font-black text-xl sm:text-2xl">
-                        {coach.full_name[0]}
-                    </div>
-                    )}
-                  </div>
-                  
-                  <div className="mb-4">
-                    <h3 className="font-black text-gray-900 text-lg sm:text-xl">{coach.full_name}</h3>
-                    <div className="flex items-center justify-center gap-2 mt-1">
-                        <span className="text-xs sm:text-sm text-yellow-500 font-bold">⭐ {coach.average_rating.toFixed(1)}</span>
-                        <span className="inline-flex shrink-0 items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-800">✓ Verified</span>
-                    </div>
-                  </div>
-
-                  <p className="text-sm font-bold text-slate-800 mb-6 flex items-center justify-center gap-2">
-                    <span className="text-lg">{coach.exam_type === 'AL' ? '🎓' : '🏆'}</span>
-                    {coach.university || "O/L Top Achiever"}
-                  </p>
-
-                  <div className="flex flex-wrap justify-center gap-2 mb-8">
-                    <span className="text-[10px] font-black uppercase bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">
-                      {coach.subject}
-                    </span>
-                  </div>
-
-                  <Link 
-                    href={user ? `/coach/${coach.id}` : "/signup"}
-                    className="block w-full text-center bg-gray-900 text-white py-4 rounded-2xl font-black text-sm group-hover:bg-blue-600 transition-colors shadow-lg active:scale-95 touch-target"
-                  >
-                    View Profile
-                  </Link>
-                </div>
-              </div>
-            ))}
+          <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
+            <h3 className="text-xl sm:text-2xl font-black text-blue-900 mb-6">Are you a top achiever? Apply to become a coach!</h3>
+            <Link 
+              href="/signup"
+              className="inline-block bg-blue-600 text-white px-8 py-4 rounded-xl font-black text-lg hover:bg-blue-700 transition-all shadow-lg hover:-translate-y-1 active:scale-95"
+            >
+              Apply as Coach
+            </Link>
           </div>
-        </div>
-      </section>
-
-      {/* SECTION 6: Testimonials */}
-      <section className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-             <span className="text-3xl sm:text-4xl mb-4 block">💬</span>
-             <h2 className="text-3xl sm:text-4xl font-black text-gray-900">Loved by Students & Parents</h2>
-          </div>
-          <div className="grid gap-6 sm:gap-8 md:grid-cols-3">
-            {[
-              { 
-                text: "My son was failing Combined Maths. His coach from Moratuwa showed him exactly how to approach the paper. He got a B in his term test!", 
-                author: "Mrs. Perera", 
-                role: "Parent of A/L Student" 
-              },
-              { 
-                text: "I didn't know how to study properly for O/Ls. My coach gave me a week-by-week plan and checked my past papers. I got 7As!", 
-                author: "Nadeesha", 
-                role: "O/L Student" 
-              },
-              { 
-                text: "Much better than tuition classes. My coach replies to my questions within hours with voice notes. It's like having a smart aiya.", 
-                author: "Kavinda", 
-                role: "A/L Science Student" 
-              }
-            ].map((t, i) => (
-              <div key={i} className="bg-white p-8 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-gray-100 shadow-sm relative italic leading-relaxed text-gray-700 font-medium">
-                <span className="text-4xl sm:text-6xl absolute top-6 left-6 text-gray-100 select-none">"</span>
-                <p className="relative z-10 mb-6 sm:mb-8 text-sm sm:text-base">{t.text}</p>
-                <div className="border-t border-gray-50 pt-6">
-                  <p className="text-sm font-black text-gray-900 not-italic">{t.author}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-400 not-italic font-bold uppercase tracking-widest leading-tight">{t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="mt-8 sm:mt-12 text-center text-gray-400 text-[10px] sm:text-xs italic">* Example testimonials based on real user feedback</p>
         </div>
       </section>
 
