@@ -1,4 +1,3 @@
-'use client'
 // @ts-nocheck
 import { Metadata } from 'next'
 
