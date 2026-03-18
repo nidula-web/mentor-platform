@@ -45,36 +45,33 @@ export default function AdminCoachesPage() {
     }
 
     async function handleApprove(mentorId) {
-        console.log('Approving mentor:', mentorId)
-
-        const { data, error } = await (supabase as any)
-            .from('mentors')
-            .update({ is_verified: true })
-            .eq('id', mentorId)
-            .select()
-
-        console.log('Update result:', data)
-        console.log('Update error:', error)
-
-        if (error) {
-            alert('Error approving: ' + error.message)
-            return
-        }
-
-        // Verify it actually updated
-        const { data: check } = await (supabase as any)
-            .from('mentors')
-            .select('is_verified')
-            .eq('id', mentorId)
-            .single()
-
-        console.log('Verification check:', check)
-
-        if (check && check.is_verified === true) {
+        try {
+            const response = await fetch(
+            process.env.NEXT_PUBLIC_SUPABASE_URL + '/rest/v1/mentors?id=eq.' + mentorId,
+            {
+                method: 'PATCH',
+                headers: {
+                'Content-Type': 'application/json',
+                'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
+                'Authorization': 'Bearer ' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({ is_verified: true })
+            }
+            )
+            
+            const data = await response.json()
+            console.log('Approve response:', data)
+            
+            if (response.ok) {
             setPendingCoaches(prev => prev.filter(c => c.id !== mentorId))
-            alert('✅ Coach Approved Successfully!')
-        } else {
-            alert('⚠️ Something went wrong. Please try again.')
+            alert('✅ Coach Approved!')
+            } else {
+            alert('Error: ' + JSON.stringify(data))
+            }
+        } catch (err) {
+            console.error('Approve error:', err)
+            alert('Error approving coach')
         }
     }
 
