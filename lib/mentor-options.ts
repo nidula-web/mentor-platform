@@ -1,3 +1,5 @@
+'use client'
+// @ts-nocheck
 export const EXAM_TYPES = ["O/L", "A/L"] as const;
 
 export const AL_STREAMS = [

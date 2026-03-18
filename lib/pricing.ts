@@ -1,3 +1,5 @@
+'use client'
+// @ts-nocheck
 export const PRICING = {
   AL: {
     studentPays: 1900,
