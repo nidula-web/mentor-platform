@@ -1,9 +1,43 @@
-"use client";
+'use client'
 // @ts-nocheck
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+
+function calculateCoachScore(mentor: any) {
+  let score = 0;
+
+  // Count A grades (highest weight)
+  if (mentor.results) {
+    const results = typeof mentor.results === 'string' 
+      ? JSON.parse(mentor.results) 
+      : mentor.results;
+    
+    Object.values(results).forEach((grade: any) => {
+      if (grade === 'A') score += 10;
+      if (grade === 'B') score += 6;
+      if (grade === 'C') score += 3;
+      if (grade === 'S') score += 1;
+    });
+  }
+
+  // Z-score bonus (if A/L)
+  if (mentor.z_score) {
+    score += mentor.z_score * 5;
+  }
+
+  // University bonus
+  const topUnis = ['moratuwa', 'colombo', 'peradeniya', 'kelaniya', 'jaffna', 'ruhuna'];
+  if (mentor.university) {
+    const uniLower = mentor.university.toLowerCase();
+    if (topUnis.some(u => uniLower.includes(u))) {
+      score += 5;
+    }
+  }
+
+  return score;
+}
 
 
 export default function Home() {
@@ -44,18 +78,51 @@ export default function Home() {
         }
       }
 
-      // Fetch top 3 verified coaches
-      const { data: topCoachesData } = await supabase
+      // Fetch all verified coaches
+      const { data: allCoaches } = await supabase
         .from("mentors")
-        .select(`
-          *,
-          profile:user_id(full_name, profile_picture)
-        `)
-        .eq("is_verified", true)
-        .limit(3);
+        .select("*")
+        .eq("is_verified", true);
 
-      if (topCoachesData) {
-        setTopCoaches(topCoachesData);
+      if (allCoaches && allCoaches.length > 0) {
+        let scoredCoaches = [];
+        
+        for (const coach of allCoaches) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture')
+            .eq('id', coach.user_id)
+            .single();
+
+          const { data: reviews } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('mentor_id', coach.id);
+
+          let averageRating = null;
+          let reviewCount = 0;
+          if (reviews && reviews.length > 0) {
+            reviewCount = reviews.length;
+            const sum = reviews.reduce((acc: any, r: any) => acc + r.rating, 0);
+            averageRating = sum / reviewCount;
+          }
+
+          const score = calculateCoachScore(coach);
+
+          scoredCoaches.push({
+            ...coach,
+            profile,
+            score,
+            averageRating,
+            reviewCount
+          });
+        }
+
+        // Sort by score (highest first)
+        scoredCoaches.sort((a, b) => b.score - a.score);
+
+        // Take top 3
+        setTopCoaches(scoredCoaches.slice(0, 3));
       }
 
       setLoading(false);
@@ -235,47 +302,121 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {topCoaches.length > 0 ? topCoaches.map((coach) => (
-              <div key={coach.id} className="group relative rounded-3xl bg-white p-8 shadow-sm transition-all hover:shadow-2xl border border-gray-100 hover:-translate-y-2">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-blue-50">
-                    {coach.profile?.profile_picture ? (
-                      <img src={coach.profile.profile_picture} alt={coach.profile.full_name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-blue-100 text-blue-600">
-                         <span className="text-2xl">👤</span>
+            {topCoaches.map((coach, index) => {
+              let badge = "";
+              let borderClass = "";
+              let titleColor = "";
+              if (index === 0) {
+                badge = "🥇 #1 Top Coach";
+                borderClass = "border-amber-300 shadow-amber-100";
+                titleColor = "text-amber-600 bg-amber-50";
+              } else if (index === 1) {
+                badge = "🥈 #2 Top Coach";
+                borderClass = "border-slate-300 shadow-slate-100";
+                titleColor = "text-slate-600 bg-slate-50";
+              } else if (index === 2) {
+                badge = "🥉 #3 Top Coach";
+                borderClass = "border-orange-200 shadow-orange-50";
+                titleColor = "text-orange-600 bg-orange-50";
+              }
+
+              const results = typeof coach.results === 'string' ? JSON.parse(coach.results) : coach.results;
+              const resultEntries = results
+                ? Object.entries(results).filter(
+                    ([k]) =>
+                      k !== "result_sheet_url" &&
+                      typeof results[k] === "string"
+                  )
+                : [];
+
+              return (
+                <div key={coach.id} className={`group relative rounded-3xl bg-white p-8 shadow-sm transition-all hover:shadow-2xl border ${borderClass} hover:-translate-y-2 flex flex-col mt-4`}>
+                  <div className={`absolute -top-4 left-1/2 -translate-x-1/2 rounded-full px-5 py-1.5 text-sm font-black whitespace-nowrap shadow-sm border ${borderClass} ${titleColor}`}>
+                    {badge}
+                  </div>
+
+                  <div className="flex flex-col items-center text-center gap-4 mb-6 mt-2">
+                    <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-gray-50 shadow-inner">
+                      {coach.profile?.profile_picture ? (
+                       <img src={coach.profile.profile_picture} alt={coach.profile.full_name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-blue-100 text-blue-600">
+                          <span className="text-4xl">👤</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-gray-900 group-hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
+                        {coach.profile?.full_name || "Verified Coach"}
+                        <span className="text-sm bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md flex items-center leading-none" title="Verified">✓</span>
+                      </h3>
+                      <p className="text-sm font-bold text-gray-500 mt-1">
+                        {coach.exam_type === "A/L" ? (coach.university || "University Achiever") : "O/L Top Achiever"}
+                      </p>
+                      {coach.averageRating && coach.reviewCount > 0 && (
+                        <div className="flex items-center justify-center gap-1 mt-2">
+                          <span className="text-yellow-400">⭐</span>
+                          <span className="text-sm font-bold text-gray-700">{coach.averageRating.toFixed(1)}</span>
+                          <span className="text-xs text-gray-400">({coach.reviewCount})</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-8 space-y-4 flex-1">
+                    {coach.z_score && coach.exam_type === "A/L" && (
+                       <div className="text-center bg-blue-50 text-blue-700 py-2 px-3 rounded-lg text-sm font-black border border-blue-100">
+                         Z-Score: {coach.z_score}
+                       </div>
+                    )}
+                    
+                    {resultEntries.length > 0 && (
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {resultEntries.map(([subject, grade]: any) => {
+                          let gradeColor = "bg-gray-800 text-white";
+                          switch (grade.toUpperCase()) {
+                            case "A": gradeColor = "bg-green-600 text-white"; break;
+                            case "B": gradeColor = "bg-blue-600 text-white"; break;
+                            case "C": gradeColor = "bg-yellow-500 text-white"; break;
+                            case "S": gradeColor = "bg-gray-400 text-white"; break;
+                            case "F": gradeColor = "bg-red-600 text-white"; break;
+                          }
+                          return (
+                            <span
+                              key={subject}
+                              className={`rounded-md px-2.5 py-1 text-xs font-bold shadow-sm ${gradeColor}`}
+                            >
+                              {subject}: {grade}
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                  <div>
-                    <h3 className="text-lg font-black text-gray-900 group-hover:text-blue-600 transition-colors">
-                      {coach.profile?.full_name || "Verified Coach"}
-                    </h3>
-                    <p className="text-sm font-bold text-gray-500">{coach.university ? coach.university : "High Achiever"}</p>
-                  </div>
+                  
+                  {role !== "mentor" && (
+                    <Link
+                      href={user && role === "student" ? `/coach/${coach.id}` : `/signup`}
+                      className="mt-auto block w-full rounded-xl bg-gray-900 px-4 py-3.5 text-center text-sm font-black text-white hover:bg-black transition-colors shadow-lg active:scale-95"
+                    >
+                      View Profile
+                    </Link>
+                  )}
                 </div>
-                
-                <div className="mb-6 space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs">🎓</span>
-                    {coach.exam_type} ({coach.al_stream || "General"})
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 font-medium line-clamp-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-50 text-green-600 text-xs">📚</span>
-                    {coach.subjects?.join(", ") || "Various Subjects"}
-                  </div>
-                </div>
-                
+              );
+            })}
+
+            {topCoaches.length < 3 && (
+              <div className="group relative rounded-3xl bg-blue-50/50 p-8 shadow-inner transition-all border-2 border-dashed border-blue-200 hover:border-blue-400 flex flex-col items-center justify-center text-center mt-4">
+                <span className="text-5xl mb-4">🎓</span>
+                <h3 className="text-xl font-black text-blue-900 mb-2">Could this be you?</h3>
+                <p className="text-blue-700 font-medium mb-8">Top achievers are joining ExamCoach.</p>
                 <Link
-                  href={`/coach/${coach.id}`}
-                  className="mt-4 block w-full rounded-xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-900 hover:bg-gray-100 transition-colors"
+                  href="/signup?role=mentor"
+                  className="mt-auto inline-block rounded-xl bg-blue-600 px-6 py-3.5 font-black text-white shadow-lg hover:bg-blue-700 transition-all active:scale-95 w-full"
                 >
-                  View Full Profile
+                  Apply as Coach
                 </Link>
-              </div>
-            )) : (
-              <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-gray-100">
-                <p className="text-gray-500 font-medium">No verified coaches available yet. Check back soon!</p>
               </div>
             )}
           </div>
