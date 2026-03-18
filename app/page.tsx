@@ -11,6 +11,7 @@ export default function Home() {
   const [role, setRole] = useState<string | null>(null);
   const [mentorId, setMentorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [topCoaches, setTopCoaches] = useState<any[]>([]);
   
 
   // FAQ State
@@ -41,6 +42,20 @@ export default function Home() {
             if (mentor) setMentorId(mentor.id);
           }
         }
+      }
+
+      // Fetch top 3 verified coaches
+      const { data: topCoachesData } = await supabase
+        .from("mentors")
+        .select(`
+          *,
+          profile:user_id(full_name, profile_picture)
+        `)
+        .eq("is_verified", true)
+        .limit(3);
+
+      if (topCoachesData) {
+        setTopCoaches(topCoachesData);
       }
 
       setLoading(false);
@@ -211,33 +226,66 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SECTION 5: Coming Soon Teaser */}
+      {/* SECTION 5: Meet Our Top Coaches */}
       <section className="py-24 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">We're Selecting Our First Coaches 🎓</h2>
-          <p className="text-gray-500 font-medium text-lg leading-relaxed mb-12">
-            Our team is carefully verifying top A/L and O/L achievers from leading universities across Sri Lanka.
-          </p>
-
-          <div className="grid gap-4 sm:grid-cols-3 mb-16">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 font-black text-gray-800 text-lg flex items-center justify-center gap-3">
-              <span className="text-2xl">🎓</span> University of Moratuwa
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 font-black text-gray-800 text-lg flex items-center justify-center gap-3">
-              <span className="text-2xl">🏥</span> University of Colombo
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 font-black text-gray-800 text-lg flex items-center justify-center gap-3">
-              <span className="text-2xl">🔬</span> University of Peradeniya
-            </div>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4 tracking-tight">Meet Our Top Coaches</h2>
+            <p className="text-gray-500 font-medium italic text-sm sm:text-base">Verified high achievers ready to guide you.</p>
           </div>
-
-          <div className="bg-blue-50 rounded-3xl p-8 border border-blue-100">
-            <h3 className="text-xl sm:text-2xl font-black text-blue-900 mb-6">Are you a top achiever? Apply to become a coach!</h3>
+          
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {topCoaches.length > 0 ? topCoaches.map((coach) => (
+              <div key={coach.id} className="group relative rounded-3xl bg-white p-8 shadow-sm transition-all hover:shadow-2xl border border-gray-100 hover:-translate-y-2">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-blue-50">
+                    {coach.profile?.profile_picture ? (
+                      <img src={coach.profile.profile_picture} alt={coach.profile.full_name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-blue-100 text-blue-600">
+                         <span className="text-2xl">👤</span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {coach.profile?.full_name || "Verified Coach"}
+                    </h3>
+                    <p className="text-sm font-bold text-gray-500">{coach.university ? coach.university : "High Achiever"}</p>
+                  </div>
+                </div>
+                
+                <div className="mb-6 space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs">🎓</span>
+                    {coach.exam_type} ({coach.al_stream || "General"})
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 font-medium line-clamp-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-50 text-green-600 text-xs">📚</span>
+                    {coach.subjects?.join(", ") || "Various Subjects"}
+                  </div>
+                </div>
+                
+                <Link
+                  href={`/coach/${coach.id}`}
+                  className="mt-4 block w-full rounded-xl bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  View Full Profile
+                </Link>
+              </div>
+            )) : (
+              <div className="col-span-full py-12 text-center bg-white rounded-3xl border border-gray-100">
+                <p className="text-gray-500 font-medium">No verified coaches available yet. Check back soon!</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-16 text-center">
             <Link 
-              href="/signup"
-              className="inline-block bg-blue-600 text-white px-8 py-4 rounded-xl font-black text-lg hover:bg-blue-700 transition-all shadow-lg hover:-translate-y-1 active:scale-95"
+              href="/browse"
+              className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-8 py-4 text-sm sm:text-base font-black text-white hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 shadow-xl shadow-blue-600/20"
             >
-              Apply as Coach
+              Browse All Coaches
             </Link>
           </div>
         </div>
