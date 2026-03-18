@@ -37,8 +37,6 @@ export default function MentorSetupPage() {
   const [university, setUniversity] = useState("");
   const [degreeProgram, setDegreeProgram] = useState("");
   const [zScore, setZScore] = useState("");
-  const [resultSheetFile, setResultSheetFile] = useState<File | null>(null);
-
   // Step 3 - Profile
   const [bio, setBio] = useState("");
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
@@ -85,11 +83,10 @@ export default function MentorSetupPage() {
 
   const isStep2Valid = 
     examType === "O/L" 
-      ? resultSheetFile !== null 
+      ? true
       : (university.trim().length > 0 && 
          degreeProgram.trim().length > 0 && 
-         zScore.trim().length > 0 && 
-         resultSheetFile !== null);
+         zScore.trim().length > 0);
 
   const isStep3Valid = 
     bio.trim().length >= 50 && 
@@ -140,17 +137,9 @@ export default function MentorSetupPage() {
 
     const supabase: any = createClient();
 
-    let resultSheetUrl: string | null = null;
     let profilePictureUrl: string | null = null;
 
     try {
-      if (resultSheetFile) {
-        resultSheetUrl = await uploadFile(
-          supabase,
-          resultSheetFile,
-          `${userId}/result-sheet-${Date.now()}`
-        );
-      }
       if (profilePictureFile) {
         profilePictureUrl = await uploadFile(
           supabase,
@@ -165,7 +154,6 @@ export default function MentorSetupPage() {
     }
 
     const results: Record<string, unknown> = { ...subjectGrades };
-    if (resultSheetUrl) results.result_sheet_url = resultSheetUrl;
 
     const { error: insertError } = await supabase.from("mentors").insert({
       user_id: userId,
@@ -211,7 +199,7 @@ export default function MentorSetupPage() {
     }
     if (step === 2 && !isStep2Valid) {
       setError("Please fill all required fields in Step 2.");
-      setTouched(prev => ({ ...prev, university: true, degreeProgram: true, zScore: true, resultSheetFile: true }));
+      setTouched(prev => ({ ...prev, university: true, degreeProgram: true, zScore: true }));
       return;
     }
     setError(null);
@@ -462,32 +450,6 @@ export default function MentorSetupPage() {
                   </>
                 )}
 
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-800">
-                    Upload {examType} Result Sheet <span className="text-red-500">*</span>
-                  </label>
-                  <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                        getFieldStatus("resultSheetFile", resultSheetFile, resultSheetFile !== null)
-                    }`}>
-                    <input
-                        type="file"
-                        id="resultFile"
-                        accept="image/*,.pdf"
-                        onChange={(e) => {
-                            setResultSheetFile(e.target.files?.[0] ?? null);
-                            markTouched("resultSheetFile");
-                        }}
-                        className="hidden"
-                    />
-                    <label htmlFor="resultFile" className="cursor-pointer">
-                        <div className="mb-2 text-3xl">📄</div>
-                        <p className="text-sm font-medium text-gray-700">
-                            {resultSheetFile ? resultSheetFile.name : "Click to upload your results"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">Image or PDF. This is used only for internal verification.</p>
-                    </label>
-                  </div>
-                </div>
               </div>
             )}
 
