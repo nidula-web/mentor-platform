@@ -64,8 +64,9 @@ export default function AdminCoachesPage() {
             link: "/mentor/dashboard"
         })
 
-        alert('Approved!')
-        loadPendingCoaches()
+        // Remove from the list immediately
+        setPendingCoaches(prev => prev.filter(c => c.id !== mentorId))
+        alert('✅ Coach Approved!')
     }
 
     async function handleReject(mentorId: string, userId: string) {
@@ -85,11 +86,14 @@ export default function AdminCoachesPage() {
             .delete()
             .eq('id', mentorId)
 
-        if (error) alert('Error rejecting coach: ' + error.message)
-        else {
-            alert('Rejected and Removed')
-            loadPendingCoaches()
+        if (error) {
+            alert('Error rejecting coach: ' + error.message)
+            return
         }
+
+        // Remove from list immediately
+        setPendingCoaches(prev => prev.filter(c => c.id !== mentorId))
+        alert('❌ Coach Rejected')
     }
 
     if (!authorized && !loading) return null
@@ -100,7 +104,9 @@ export default function AdminCoachesPage() {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <Link href="/admin" className="text-blue-600 text-sm font-bold hover:underline">← Back to Dashboard</Link>
-                        <h1 className="text-3xl font-bold text-gray-900 mt-2">Coach Applications</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 mt-2">
+                            Coach Applications ({pendingCoaches.length})
+                        </h1>
                     </div>
                 </div>
 
@@ -201,8 +207,8 @@ export default function AdminCoachesPage() {
 
                         {pendingCoaches.length === 0 && (
                             <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 py-20 text-center">
-                                <span className="text-4xl mb-4 block">🥳</span>
-                                <h3 className="text-xl font-bold text-gray-900">No pending applications</h3>
+                                <span className="text-4xl mb-4 block">🎉</span>
+                                <h3 className="text-xl font-bold text-gray-900">No pending applications 🎉</h3>
                                 <p className="text-gray-500">All set! No coaches are waiting for verification.</p>
                             </div>
                         )}
