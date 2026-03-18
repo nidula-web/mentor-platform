@@ -1,4 +1,4 @@
-"use client"
+'use client'
 // @ts-nocheck
 
 import { useEffect, useState } from 'react'
@@ -44,29 +44,38 @@ export default function AdminCoachesPage() {
         setLoading(false)
     }
 
-    async function handleApprove(mentorId: string, userId: string) {
-        // Update mentor status
-        const { error: updateError } = await supabase.from('mentors')
+    async function handleApprove(mentorId) {
+        console.log('Approving mentor:', mentorId)
+
+        const { data, error } = await (supabase as any)
+            .from('mentors')
             .update({ is_verified: true })
             .eq('id', mentorId)
+            .select()
 
-        if (updateError) {
-            alert('Error approving coach: ' + updateError.message)
+        console.log('Update result:', data)
+        console.log('Update error:', error)
+
+        if (error) {
+            alert('Error approving: ' + error.message)
             return
         }
 
-        // Send notification
-        await supabase.from('notifications').insert({
-            user_id: userId,
-            title: "🎉 Profile Verified!",
-            message: "Congratulations! Your profile is now verified. You can now accept students.",
-            type: "success",
-            link: "/mentor/dashboard"
-        })
+        // Verify it actually updated
+        const { data: check } = await (supabase as any)
+            .from('mentors')
+            .select('is_verified')
+            .eq('id', mentorId)
+            .single()
 
-        // Remove from the list immediately
-        setPendingCoaches(prev => prev.filter(c => c.id !== mentorId))
-        alert('✅ Coach Approved!')
+        console.log('Verification check:', check)
+
+        if (check && check.is_verified === true) {
+            setPendingCoaches(prev => prev.filter(c => c.id !== mentorId))
+            alert('✅ Coach Approved Successfully!')
+        } else {
+            alert('⚠️ Something went wrong. Please try again.')
+        }
     }
 
     async function handleReject(mentorId: string, userId: string) {
@@ -187,7 +196,7 @@ export default function AdminCoachesPage() {
 
                                             <div className="flex gap-3 mt-auto pt-4">
                                                 <button
-                                                    onClick={() => handleApprove(coach.id, coach.user_id)}
+                                                    onClick={() => handleApprove(coach.id)}
                                                     className="flex-1 bg-green-600 text-white px-4 py-3 rounded-xl text-sm font-bold hover:bg-green-700 shadow-lg shadow-green-600/20"
                                                 >
                                                     ✅ Approve
