@@ -57,8 +57,7 @@ export default function AdminAffiliatesPage() {
                 account_number,
                 account_name,
                 total_earned,
-                created_at,
-                profile:id(full_name, email, phone)
+                created_at
             `)
             .order('total_earned', { ascending: false })
 
@@ -68,16 +67,34 @@ export default function AdminAffiliatesPage() {
             return
         }
 
-        // Fetch referral counts for each
+        // Fetch referral counts and profiles
+        const affIds = affs.map((a: any) => a.id)
+        let profilesMap: any = {}
+        if (affIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, full_name, email, phone')
+                .in('id', affIds)
+            
+            if (profiles) {
+                profiles.forEach((p: any) => { profilesMap[p.id] = p })
+            }
+        }
+
         const affiliateData = await Promise.all(affs.map(async (aff: any) => {
-            const { count } = await supabase
+            const { data: refs } = await supabase
                 .from('referrals')
-                .select('*', { count: 'exact', head: true })
+                .select(`
+                    id, 
+                    student:referred_student_id(full_name, email)
+                `)
                 .eq('affiliate_id', aff.id)
             
             return {
                 ...aff,
-                referral_count: count || 0
+                profile: profilesMap[aff.id] || { full_name: 'Unknown', email: 'N/A', phone: 'N/A' },
+                referral_count: refs ? refs.length : 0,
+                referrals_list: refs || []
             }
         }))
 
@@ -188,9 +205,21 @@ export default function AdminAffiliatesPage() {
                                         <span className="font-black text-green-400 text-lg">Rs. {aff.total_earned.toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="bg-blue-900/30 text-blue-400 font-black px-3 py-1 rounded-full text-xs">
-                                            {aff.referral_count} Joined
-                                        </span>
+                                        <div className="mb-2">
+                                            <span className="bg-blue-900/30 text-blue-400 font-black px-3 py-1 rounded-full text-xs">
+                                                {aff.referral_count} Joined
+                                            </span>
+                                        </div>
+                                        {aff.referrals_list && aff.referrals_list.length > 0 && (
+                                            <div className="space-y-1 mt-2">
+                                                {aff.referrals_list.map((r: any) => (
+                                                    <div key={r.id} className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                        <span className="text-blue-500">•</span> 
+                                                        <span className="truncate max-w-[120px]" title={r.student?.email}>{r.student?.full_name || 'Unknown'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         {aff.account_number ? (
