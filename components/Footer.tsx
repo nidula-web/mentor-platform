@@ -17,6 +17,7 @@ export default function Footer() {
             <ul className="space-y-4 text-sm font-bold">
               <li><Link href="/" className="text-slate-500 hover:text-white transition-colors italic touch-target py-2 block">Home</Link></li>
               <li><Link href="/browse" className="text-slate-500 hover:text-white transition-colors italic touch-target py-2 block">Browse Coaches</Link></li>
+              <li><Link href="/affiliate/dashboard" className="text-slate-500 hover:text-white transition-colors italic touch-target py-2 block">Affiliate Program</Link></li>
               <li><Link href="/contact" className="text-slate-500 hover:text-white transition-colors italic touch-target py-2 block">Contact Support</Link></li>
             </ul>
           </div>

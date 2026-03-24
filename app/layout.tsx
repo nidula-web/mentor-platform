@@ -30,6 +30,8 @@ export const metadata: Metadata = {
 };
 
 import Footer from "@/components/Footer";
+import ReferralTracker from "@/components/ReferralTracker";
+import { Suspense } from "react";
 
 export default function RootLayout({
   children,
@@ -41,6 +43,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
+        <Suspense fallback={null}>
+          <ReferralTracker />
+        </Suspense>
         <Navbar />
         <PresenceTracker />
         <main className="flex-grow">

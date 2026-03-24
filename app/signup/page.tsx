@@ -86,6 +86,30 @@ function SignUpContent() {
       return;
     }
 
+    if (role === "student") {
+      try {
+        const refCode = localStorage.getItem("referral_code");
+        if (refCode) {
+          // Find the affiliate by code
+          const { data: affiliate } = await supabase
+            .from("affiliates")
+            .select("id")
+            .eq("referral_code", refCode)
+            .single();
+
+          if (affiliate) {
+            // Create referral linking affiliate and new student
+            await supabase.from("referrals").insert({
+              affiliate_id: affiliate.id,
+              referred_student_id: userId,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Referral tracking error:", err);
+      }
+    }
+
     if (role === "mentor") {
       router.push("/mentor/setup");
     } else {

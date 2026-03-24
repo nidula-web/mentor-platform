@@ -101,6 +101,7 @@ export default function AdminPage() {
       .select(`
         id,
         amount_paid,
+        student_id,
         payment_proof_url,
         created_at,
         student:student_id(full_name, email),
@@ -142,6 +143,43 @@ export default function AdminPage() {
       .eq('id', sub.id)
 
     if (!error) {
+      try {
+        // Check for referral
+        const { data: referral } = await supabase
+          .from('referrals')
+          .select('affiliate_id')
+          .eq('referred_student_id', sub.student_id)
+          .single()
+        
+        if (referral) {
+          // Calculate commission (A/L: 300, O/L: 150)
+          const examType = sub.mentor?.exam_type
+          const commision = examType === 'AL' ? 300 : 150
+          
+          // Record earning
+          await supabase.from('affiliate_earnings').insert({
+            affiliate_id: referral.affiliate_id,
+            subscription_id: sub.id,
+            amount: commision
+          })
+
+          // Update total earned
+          const { data: aff } = await supabase
+            .from('affiliates')
+            .select('total_earned')
+            .eq('id', referral.affiliate_id)
+            .single()
+            
+          if (aff) {
+            await supabase.from('affiliates')
+              .update({ total_earned: (aff.total_earned || 0) + commision })
+              .eq('id', referral.affiliate_id)
+          }
+        }
+      } catch (err) {
+        console.error("Affiliate earning error:", err)
+      }
+
       alert('Approved!')
       loadDashboardData()
     } else {
@@ -274,6 +312,14 @@ export default function AdminPage() {
             </div>
             <h3 className="text-xl font-black text-white group-hover:text-blue-400">Payouts & Bank Info</h3>
             <p className="text-sm text-slate-500 mt-1">{registeredCoachesCount} coaches registered</p>
+          </Link>
+
+          <Link href="/admin/affiliates" className="bg-slate-900 border-slate-800 p-8 rounded-3xl border transition-all group hover:border-blue-500/30">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-3xl">🤝</span>
+            </div>
+            <h3 className="text-xl font-black text-white group-hover:text-blue-400">Affiliate Partners</h3>
+            <p className="text-sm text-slate-500 mt-1">Manage referral links & commissions</p>
           </Link>
 
           <Link href="/admin/contacts" className="bg-slate-900 border-slate-800 p-8 rounded-3xl border transition-all group hover:border-blue-500/30">

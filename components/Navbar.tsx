@@ -102,9 +102,14 @@ export default function Navbar() {
           {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center gap-6 ml-6">
             {(!user || profile?.role === "student") && (
-              <Link href="/browse" className="text-sm font-semibold text-gray-600 hover:text-blue-700 transition-colors">
-                Browse Coaches
-              </Link>
+              <>
+                <Link href="/browse" className="text-sm font-semibold text-gray-600 hover:text-blue-700 transition-colors">
+                  Browse Coaches
+                </Link>
+                <Link href="/affiliate/dashboard" className="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors">
+                  Affiliate
+                </Link>
+              </>
             )}
             <Link href="/contact" className="text-sm font-semibold text-gray-600 hover:text-blue-700 transition-colors">
               Contact
@@ -218,13 +223,22 @@ export default function Navbar() {
               )}
 
               {(!user || profile?.role === "student") && (
-                <Link
-                  href="/browse"
-                  className="flex items-center h-14 px-6 text-base font-bold text-gray-900 hover:bg-blue-50 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="mr-3">🔍</span> Browse Coaches
-                </Link>
+                <>
+                  <Link
+                    href="/browse"
+                    className="flex items-center h-14 px-6 text-base font-bold text-gray-900 hover:bg-blue-50 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="mr-3">🔍</span> Browse Coaches
+                  </Link>
+                  <Link
+                    href="/affiliate/dashboard"
+                    className="flex items-center h-14 px-6 text-base font-bold text-green-600 hover:bg-green-50 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="mr-3">🤝</span> Affiliate
+                  </Link>
+                </>
               )}
 
               <Link
