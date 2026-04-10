@@ -12,6 +12,8 @@ type ChatMessage = {
     sender_id: string
     sender_name?: string
     content: string
+    image_url?: string
+    voice_url?: string
     message_type: 'text' | 'image' | 'voice'
     created_at: string
 }
@@ -125,6 +127,13 @@ export default function AdminChatsPage() {
                 })
             })
 
+            let lastMessagePreview = 'No messages'
+            if (lastMsg) {
+                if (lastMsg.content) lastMessagePreview = lastMsg.content
+                else if (lastMsg.message_type === 'image') lastMessagePreview = '📷 Image'
+                else if (lastMsg.message_type === 'voice') lastMessagePreview = '🎤 Voice Message'
+            }
+
             return {
                 id: sub.id,
                 student_id: sub.student_id,
@@ -132,7 +141,7 @@ export default function AdminChatsPage() {
                 mentor_id: sub.mentor_id,
                 coach_name: sub.mentor?.user_id?.full_name || 'Unknown Coach',
                 status: sub.status,
-                last_message: lastMsg?.content || 'No messages',
+                last_message: lastMessagePreview,
                 last_message_time: lastMsg?.created_at,
                 message_count: count || 0,
                 is_flagged: isFlagged,
@@ -160,6 +169,8 @@ export default function AdminChatsPage() {
                 subscription_id,
                 sender_id,
                 content,
+                image_url,
+                voice_url,
                 message_type,
                 created_at
             `)
@@ -347,9 +358,9 @@ export default function AdminChatsPage() {
                                                     )}
                                                     {msg.message_type === 'image' && (
                                                         <div className="space-y-2">
-                                                            <a href={msg.content} target="_blank" rel="noreferrer">
+                                                            <a href={msg.image_url} target="_blank" rel="noreferrer">
                                                                 <img 
-                                                                    src={msg.content} 
+                                                                    src={msg.image_url} 
                                                                     alt="Chat asset" 
                                                                     className="rounded-lg max-h-64 hover:opacity-90 transition-all cursor-zoom-in"
                                                                 />
@@ -360,7 +371,7 @@ export default function AdminChatsPage() {
                                                     {msg.message_type === 'voice' && (
                                                         <div className="pt-2">
                                                             <audio controls className="h-8 w-full">
-                                                                <source src={msg.content} type="audio/mpeg" />
+                                                                <source src={msg.voice_url} type="audio/mpeg" />
                                                                 Your browser does not support the audio element.
                                                             </audio>
                                                         </div>
