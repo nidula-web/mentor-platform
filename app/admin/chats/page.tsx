@@ -94,10 +94,11 @@ export default function AdminChatsPage() {
             .eq('status', 'active')
 
         if (subsError) {
-            console.error(subsError)
+            console.error("Error fetching subscriptions:", subsError)
             setLoading(false)
             return
         }
+        console.log("Found active subscriptions:", subs.length)
 
         const chatData: ChatSubscription[] = await Promise.all(subs.map(async (sub: any) => {
             const { data: msgs, count } = await supabase
@@ -176,6 +177,9 @@ export default function AdminChatsPage() {
             `)
             .eq('subscription_id', subId)
             .order('created_at', { ascending: true })
+
+        console.log(`Fetched ${msgs?.length || 0} messages for sub ${subId}`)
+        if (error) console.error("Error fetching messages:", error)
 
         if (msgs) {
             // Fetch sender names
