@@ -161,6 +161,9 @@ export default function StudentDashboardPage() {
   };
 
   const now = new Date();
+  const pendingSubs = subscriptions.filter(
+    (s) => s.status === "pending"
+  );
   const activeSubs = subscriptions.filter(
     (s) =>
       s.status === "active" &&
@@ -171,7 +174,7 @@ export default function StudentDashboardPage() {
     (s) =>
       s.status === "expired" ||
       s.status === "cancelled" ||
-      (s.expires_at && new Date(s.expires_at) <= now)
+      (s.status === "active" && s.expires_at && new Date(s.expires_at) <= now)
   );
 
   if (loading) {
@@ -189,6 +192,62 @@ export default function StudentDashboardPage() {
         <h1 className="mb-8 text-2xl font-bold text-gray-900 sm:text-3xl">
           Welcome, {studentName}
         </h1>
+
+        {/* Pending Subscriptions */}
+        {pendingSubs.length > 0 && (
+          <section className="mb-12">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Pending Approval
+            </h2>
+            <div className="grid gap-6 sm:grid-cols-2">
+              {pendingSubs.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="rounded-xl border border-yellow-200 bg-yellow-50 p-6 shadow-sm relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 rounded-bl-xl bg-yellow-200 px-3 py-1 text-xs font-bold text-yellow-800">
+                    Reviewing Payment
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full">
+                      {sub.mentor_profile?.profile_picture ? (
+                        <img
+                          src={sub.mentor_profile.profile_picture}
+                          alt=""
+                          className="h-14 w-14 object-cover"
+                        />
+                      ) : (
+                        <DefaultAvatar className="h-14 w-14" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-gray-900">
+                        {sub.mentor_profile?.full_name ?? "Coach"}
+                      </h3>
+                      {sub.mentor?.university && (
+                        <p className="text-sm text-gray-600">
+                          {sub.mentor.university}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 rounded-lg bg-white p-4 border border-yellow-100 flex gap-3 text-sm text-yellow-800">
+                    <div className="shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-bold mb-1">Payment receipt uploaded successfully!</p>
+                      <p>Please wait while we review and approve it. This usually takes under 24 hours.</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Active Subscriptions */}
         <section className="mb-12">
