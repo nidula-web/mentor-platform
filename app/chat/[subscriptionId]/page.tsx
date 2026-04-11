@@ -139,7 +139,24 @@ export default function ChatPage() {
 
     useEffect(() => {
         loadChat()
-    }, [])
+        
+        // Fallback polling in case Realtime is disabled
+        const interval = setInterval(async () => {
+            if (!subscriptionId) return
+            const { data: msgs } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('subscription_id', subscriptionId)
+                .order('created_at', { ascending: true })
+            if (msgs) setMessages((prev: any[]) => {
+                // Ensure we return the new messages effectively triggering a re-render only if content changed 
+                // but keeping it simple for now as React reconciles via keys
+                return msgs
+            })
+        }, 3000)
+        
+        return () => clearInterval(interval)
+    }, [subscriptionId])
 
     useEffect(() => {
         scrollToBottom()
@@ -266,7 +283,10 @@ export default function ChatPage() {
                         filter: 'subscription_id=eq.' + subscriptionId
                     },
                     (payload: any) => {
-                        setMessages(prev => [...prev, payload.new])
+                        setMessages((prev: any[]) => {
+                            if (prev.some(m => m.id === payload.new.id)) return prev;
+                            return [...prev, payload.new];
+                        })
                     }
                 )
                 .on(
@@ -301,13 +321,20 @@ export default function ChatPage() {
         const msgContent = newMessage.trim()
         setNewMessage('')
 
-        await supabase.from('messages').insert({
+        const { data, error } = await supabase.from('messages').insert({
             subscription_id: subscriptionId,
             sender_id: currentUserId,
             content: msgContent,
             message_type: 'text',
             is_read: false
-        })
+        }).select()
+
+        if (data && data[0]) {
+            setMessages((prev: any[]) => {
+                if (prev.some(m => m.id === data[0].id)) return prev;
+                return [...prev, data[0]];
+            })
+        }
     }
 
     async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -330,13 +357,20 @@ export default function ChatPage() {
             .from('chat-images')
             .getPublicUrl(fileName)
 
-        await supabase.from('messages').insert({
+        const { data, error: msgError } = await supabase.from('messages').insert({
             subscription_id: subscriptionId,
             sender_id: currentUserId,
             image_url: urlData.publicUrl,
             message_type: 'image',
             is_read: false
-        })
+        }).select()
+
+        if (data && data[0]) {
+            setMessages((prev: any[]) => {
+                if (prev.some(m => m.id === data[0].id)) return prev;
+                return [...prev, data[0]];
+            })
+        }
 
         setUploading(false)
         if (fileInputRef.current) fileInputRef.current.value = ''
@@ -374,17 +408,22 @@ export default function ChatPage() {
                     .from('voice-messages')
                     .getPublicUrl(fileName)
 
-                const { error: msgError } = await supabase.from('messages').insert({
+                const { data, error: msgError } = await supabase.from('messages').insert({
                     subscription_id: subscriptionId,
                     sender_id: currentUserId,
                     voice_url: urlData.publicUrl,
                     message_type: 'voice',
                     is_read: false
-                })
+                }).select()
 
                 if (msgError) {
                     console.error('Voice message insert error:', msgError)
                     alert('Failed to send voice message')
+                } else if (data && data[0]) {
+                    setMessages((prev: any[]) => {
+                        if (prev.some(m => m.id === data[0].id)) return prev;
+                        return [...prev, data[0]];
+                    })
                 }
 
                 setRecordingUploading(false)
