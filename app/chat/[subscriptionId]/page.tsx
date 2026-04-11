@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams, useRouter } from 'next/navigation'
 
-function VoicePlayer({ msgId, url, isMe }) {
+function VoicePlayer({ msgId, url, isMe }: { msgId: string, url: string, isMe: boolean }) {
   const audioRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -98,6 +98,8 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<any[]>([])
     const [newMessage, setNewMessage] = useState('')
     const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+    const [myUserName, setMyUserName] = useState<string>('Someone')
+    const [otherUserIdState, setOtherUserIdState] = useState<string | null>(null)
     const [otherUserName, setOtherUserName] = useState('Loading...')
     const [otherUserPicture, setOtherUserPicture] = useState(null)
     const [isOnline, setIsOnline] = useState(false)
@@ -221,6 +223,9 @@ export default function ChatPage() {
             }
             setCurrentUserId(user.id)
 
+            const { data: myProfile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+            if (myProfile) setMyUserName(myProfile.full_name)
+
             const { data: sub } = await supabase
                 .from('subscriptions')
                 .select('student_id, mentor_id')
@@ -241,6 +246,7 @@ export default function ChatPage() {
                 }
 
                 if (otherUserId) {
+                    setOtherUserIdState(otherUserId)
                     const { data: profile } = await supabase
                         .from('profiles')
                         .select('full_name, profile_picture, is_online, last_seen')
@@ -256,12 +262,16 @@ export default function ChatPage() {
                 }
             }
 
-            const { data: msgs } = await supabase
+            const { data: msgs, error: fetchError } = await supabase
                 .from('messages')
                 .select('*')
                 .eq('subscription_id', subscriptionId)
                 .order('created_at', { ascending: true })
             
+            if (fetchError) {
+                console.error("Error fetching messages:", fetchError)
+                alert("Could not load messages. Check console.")
+            }
             if (msgs) {
                 setMessages(msgs)
             }
@@ -305,8 +315,27 @@ export default function ChatPage() {
 
             setLoading(false)
         } catch (err) {
+            console.error("Critical error loading chat:", err)
             setLoading(false)
         }
+    }
+
+    async function sendNotification(messageType: string) {
+        if (!otherUserIdState) return
+        
+        let typeText = "a message"
+        if (messageType === 'image') typeText = "an image"
+        if (messageType === 'voice') typeText = "a voice message"
+
+        // Prevent duplicate spam - check if there's already an unread message notification from me today
+        // But for simplicity, let's just insert
+        await supabase.from('notifications').insert({
+            user_id: otherUserIdState,
+            title: "New Message",
+            message: `${myUserName} sent you ${typeText}`,
+            type: "message",
+            link: `/chat/${subscriptionId}`
+        })
     }
 
     async function sendMessage() {
@@ -329,7 +358,13 @@ export default function ChatPage() {
             is_read: false
         }).select()
 
+        if (error) {
+            console.error("Error inserting message:", error)
+            alert("Failed to send message: " + error.message)
+        }
+
         if (data && data[0]) {
+            sendNotification('text')
             setMessages((prev: any[]) => {
                 if (prev.some(m => m.id === data[0].id)) return prev;
                 return [...prev, data[0]];
@@ -366,6 +401,7 @@ export default function ChatPage() {
         }).select()
 
         if (data && data[0]) {
+            sendNotification('image')
             setMessages((prev: any[]) => {
                 if (prev.some(m => m.id === data[0].id)) return prev;
                 return [...prev, data[0]];
@@ -420,6 +456,7 @@ export default function ChatPage() {
                     console.error('Voice message insert error:', msgError)
                     alert('Failed to send voice message')
                 } else if (data && data[0]) {
+                    sendNotification('voice')
                     setMessages((prev: any[]) => {
                         if (prev.some(m => m.id === data[0].id)) return prev;
                         return [...prev, data[0]];
